@@ -1,62 +1,62 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>小卡展示（带分类）</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; text-align: center; }
-    .grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
-    .card {
-      position: relative;
-      width: 120px; height: 120px;
-      border: 1px solid #ccc;
-      overflow: hidden;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .card img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-    .delete-btn {
-      position: absolute;
-      top: 3px; right: 3px;
-      background: rgba(255,0,0,0.8);
-      border: none;
-      border-radius: 50%;
-      color: white;
-      width: 22px; height: 22px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    #modal img {
-      max-width: 90vw;
-      max-height: 90vh;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #fff;
-    }
-    #categorySelect {
-      font-size: 16px;
-      padding: 5px;
-      margin-bottom: 10px;
-    }
-    #uploadCategory {
-      margin-left: 10px;
-      font-size: 14px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>小卡展示（IndexedDB 存储版）</title>
+<style>
+  body { font-family: sans-serif; margin: 20px; text-align: center; }
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+  .card {
+    position: relative;
+    width: 120px; height: 120px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .card img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .delete-btn {
+    position: absolute;
+    top: 3px; right: 3px;
+    background: rgba(255,0,0,0.8);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    width: 22px; height: 22px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #fff;
+  }
+  #categorySelect {
+    font-size: 16px;
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+  #uploadCategory {
+    margin-left: 10px;
+    font-size: 14px;
+  }
+</style>
 </head>
 <body>
-  <h1>小卡展示（带分类）</h1>
+  <h1>小卡展示（IndexedDB 存储版）</h1>
 
   <label for="categorySelect">选择分类: </label>
   <select id="categorySelect">
@@ -106,27 +106,101 @@
     <img id="modalImg" src="" alt="大图预览" />
   </div>
 
-  <script>
-    const fileInput = document.getElementById('fileInput');
-    const cardGrid = document.getElementById('cardGrid');
-    const modal = document.getElementById('modal');
-    const modalImg = document.getElementById('modalImg');
-    const categorySelect = document.getElementById('categorySelect');
-    const uploadCategory = document.getElementById('uploadCategory');
+<script>
+  const dbName = 'cardDB';
+  const storeName = 'cards';
 
-    let cards = JSON.parse(localStorage.getItem('cards') || '[]');
+  let db;
+  let cardGrid = document.getElementById('cardGrid');
+  let modal = document.getElementById('modal');
+  let modalImg = document.getElementById('modalImg');
+  let categorySelect = document.getElementById('categorySelect');
+  let uploadCategory = document.getElementById('uploadCategory');
+  let fileInput = document.getElementById('fileInput');
 
-    function saveCards() {
-      localStorage.setItem('cards', JSON.stringify(cards));
-    }
+  // 打开或创建数据库
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, 1);
+      request.onerror = () => reject('数据库打开失败');
+      request.onsuccess = () => {
+        db = request.result;
+        resolve(db);
+      };
+      request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          const store = db.createObjectStore(storeName, { keyPath: 'id' });
+          store.createIndex('category', 'category', { unique: false });
+        }
+      };
+    });
+  }
 
-    function renderCards(filterCategory = '全部') {
-      cardGrid.innerHTML = '';
-      let filteredCards = cards;
-      if (filterCategory !== '全部') {
-        filteredCards = cards.filter(c => c.category === filterCategory);
+  // 添加卡片
+  function addCard(card) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.add(card);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject('添加卡片失败');
+    });
+  }
+
+  // 删除卡片
+  function deleteCard(id) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject('删除卡片失败');
+    });
+  }
+
+  // 获取所有卡片，支持按分类过滤
+  function getCards(category = '全部') {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readonly');
+      const store = tx.objectStore(storeName);
+      const cards = [];
+
+      if (category === '全部') {
+        const req = store.openCursor();
+        req.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            cards.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(cards);
+          }
+        };
+        req.onerror = () => reject('获取卡片失败');
+      } else {
+        const index = store.index('category');
+        const range = IDBKeyRange.only(category);
+        const req = index.openCursor(range);
+        req.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            cards.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(cards);
+          }
+        };
+        req.onerror = () => reject('获取卡片失败');
       }
-      filteredCards.forEach(card => {
+    });
+  }
+
+  // 渲染卡片
+  function renderCards(category = '全部') {
+    getCards(category).then(cards => {
+      cardGrid.innerHTML = '';
+      cards.forEach(card => {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'card';
 
@@ -142,10 +216,9 @@
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.textContent = '×';
-        delBtn.addEventListener('click', (e) => {
+        delBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          cards = cards.filter(c => c.id !== card.id);
-          saveCards();
+          await deleteCard(card.id);
           renderCards(categorySelect.value);
         });
 
@@ -153,32 +226,45 @@
         cardDiv.appendChild(delBtn);
         cardGrid.appendChild(cardDiv);
       });
-    }
+    });
+  }
 
-    fileInput.addEventListener('change', (e) => {
-      const files = e.target.files;
-      const category = uploadCategory.value;
-      for (const file of files) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          cards.push({ id: Date.now() + Math.random(), image: e.target.result, category });
-          saveCards();
-          renderCards(categorySelect.value);
+  // 上传文件处理
+  fileInput.addEventListener('change', () => {
+    const files = fileInput.files;
+    const category = uploadCategory.value;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const card = {
+          id: Date.now() + Math.random(),
+          image: e.target.result,
+          category
         };
-        reader.readAsDataURL(file);
-      }
-      fileInput.value = '';
+        await addCard(card);
+        renderCards(categorySelect.value);
+      };
+      reader.readAsDataURL(file);
     });
 
-    modal.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
+    fileInput.value = '';
+  });
 
-    categorySelect.addEventListener('change', () => {
-      renderCards(categorySelect.value);
-    });
+  modal.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
 
+  categorySelect.addEventListener('change', () => {
+    renderCards(categorySelect.value);
+  });
+
+  // 初始化
+  openDB().then(() => {
     renderCards();
-  </script>
+  }).catch(err => {
+    alert(err);
+  });
+</script>
 </body>
 </html>
