@@ -267,7 +267,4 @@
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
       const index = store.index('category');
-      const range = category === '全部' ? null : IDBKeyRange.only(category);
-      const request = category === '全部' ? store.openCursor() : index.openCursor(range);
-
-      request
+      const range = category === '全部' ? null : IDBKeyRange.only(category
