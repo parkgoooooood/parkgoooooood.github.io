@@ -53,6 +53,19 @@
     margin-left: 10px;
     font-size: 14px;
   }
+  #deleteAllBtn {
+    margin-left: 20px;
+    font-size: 14px;
+    padding: 5px 10px;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #deleteAllBtn:hover {
+    background-color: #c9302c;
+  }
 </style>
 </head>
 <body>
@@ -77,6 +90,8 @@
     <option value="宝怪卡池">宝怪卡池</option>
     <option value="芙卡池">芙卡池</option>
   </select>
+
+  <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
 
   <br/>
 
@@ -117,6 +132,7 @@
   let categorySelect = document.getElementById('categorySelect');
   let uploadCategory = document.getElementById('uploadCategory');
   let fileInput = document.getElementById('fileInput');
+  let deleteAllBtn = document.getElementById('deleteAllBtn');
 
   // 打开或创建数据库
   function openDB() {
@@ -159,6 +175,28 @@
     });
   }
 
+  // 批量删除指定分类所有卡片
+  function deleteAllCardsByCategory(category) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const index = store.index('category');
+      const range = category === '全部' ? null : IDBKeyRange.only(category);
+      const request = category === '全部' ? store.openCursor() : index.openCursor(range);
+
+      request.onsuccess = e => {
+        const cursor = e.target.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      request.onerror = () => reject('批量删除失败');
+    });
+  }
+
   // 获取所有卡片，支持按分类过滤
   function getCards(category = '全部') {
     return new Promise((resolve, reject) => {
@@ -198,7 +236,6 @@
 
   // 渲染卡片
   function renderCards(category = '全部') {
-    console.log('渲染分类:', category);
     getCards(category).then(cards => {
       cardGrid.innerHTML = '';
       cards.forEach(card => {
@@ -260,9 +297,22 @@
     renderCards(categorySelect.value);
   });
 
+  // 一键删除当前分类所有卡片
+  deleteAllBtn.addEventListener('click', async () => {
+    if (confirm(`确认删除分类 "${categorySelect.value}" 下的所有卡片吗？此操作不可恢复！`)) {
+      try {
+        await deleteAllCardsByCategory(categorySelect.value);
+        renderCards(categorySelect.value);
+        alert('删除成功！');
+      } catch (err) {
+        alert('删除失败：' + err);
+      }
+    }
+  });
+
   // 初始化
   openDB().then(() => {
-    renderCards(categorySelect.value);  // 这里用当前选择的分类渲染
+    renderCards(categorySelect.value);
   }).catch(err => {
     alert(err);
   });
