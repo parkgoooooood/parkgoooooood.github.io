@@ -2,9 +2,55 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8" />
-<title>小卡展示（IndexedDB 存储版）</title>
+<title>小卡展示（含管理员系统）</title>
 <style>
   body { font-family: sans-serif; margin: 20px; text-align: center; }
+  #adminLoginBtn {
+    position: fixed;
+    top: 10px; right: 10px;
+    padding: 6px 12px;
+    background-color: #337ab7;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 10000;
+  }
+  #adminLoginBtn:hover {
+    background-color: #286090;
+  }
+  #adminPanel {
+    margin-top: 20px;
+    padding: 15px;
+    border: 2px solid #337ab7;
+    border-radius: 8px;
+    display: none;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+  }
+  #adminPanel label {
+    margin-right: 8px;
+  }
+  #adminPanel input, #adminPanel select, #adminPanel button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    padding: 5px 8px;
+    font-size: 14px;
+  }
+  #deleteAllBtn {
+    font-size: 14px;
+    padding: 7px 15px;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #deleteAllBtn:hover {
+    background-color: #c9302c;
+  }
   .controls {
     display: flex;
     justify-content: center;
@@ -18,19 +64,6 @@
     padding: 6px 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
-  }
-  #deleteAllBtn {
-    font-size: 14px;
-    padding: 7px 15px;
-    background-color: #d9534f;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  #deleteAllBtn:hover {
-    background-color: #c9302c;
   }
   #fileInput {
     cursor: pointer;
@@ -83,73 +116,86 @@
 </style>
 </head>
 <body>
-  <h1>小卡展示（IndexedDB 存储版）</h1>
 
-  <div class="controls">
-    <label for="categorySelect">选择分类:</label>
-    <select id="categorySelect">
-      <option value="全部">全部</option>
-      <option value="9.9卡池">9.9卡池</option>
-      <option value="15.9卡池">15.9卡池</option>
-      <option value="星光卡">星光卡</option>
-      <option value="25.9吒卡池">25.9吒卡池</option>
-      <option value="29.9吒卡池">29.9吒卡池</option>
-      <option value="金冬天卡池">金冬天卡池</option>
-      <option value="柳智敏卡池">柳智敏卡池</option>
-      <option value="宁艺卓卡池">宁艺卓卡池</option>
-      <option value="吉赛尔卡池">吉赛尔卡池</option>
-      <option value="金智秀卡池">金智秀卡池</option>
-      <option value="lisa卡池">lisa卡池</option>
-      <option value="Jennie卡池">Jennie卡池</option>
-      <option value="rose卡池">rose卡池</option>
-      <option value="宝怪卡池">宝怪卡池</option>
-      <option value="芙卡池">芙卡池</option>
-    </select>
+<button id="adminLoginBtn">管理员登录</button>
 
-    <label for="uploadCategory">上传分类:</label>
-    <select id="uploadCategory">
-      <option value="9.9卡池">9.9卡池</option>
-      <option value="15.9卡池">15.9卡池</option>
-      <option value="星光卡">星光卡</option>
-      <option value="25.9吒卡池">25.9吒卡池</option>
-      <option value="29.9吒卡池">29.9吒卡池</option>
-      <option value="金冬天卡池">金冬天卡池</option>
-      <option value="柳智敏卡池">柳智敏卡池</option>
-      <option value="宁艺卓卡池">宁艺卓卡池</option>
-      <option value="吉赛尔卡池">吉赛尔卡池</option>
-      <option value="金智秀卡池">金智秀卡池</option>
-      <option value="lisa卡池">lisa卡池</option>
-      <option value="Jennie卡池">Jennie卡池</option>
-      <option value="rose卡池">rose卡池</option>
-      <option value="宝怪卡池">宝怪卡池</option>
-      <option value="芙卡池">芙卡池</option>
-    </select>
+<h1>小卡展示（含管理员系统）</h1>
 
-    <input type="file" id="fileInput" multiple accept="image/*" />
+<div class="controls">
+  <label for="categorySelect">选择分类:</label>
+  <select id="categorySelect">
+    <option value="全部">全部</option>
+    <option value="9.9卡池">9.9卡池</option>
+    <option value="15.9卡池">15.9卡池</option>
+    <option value="星光卡">星光卡</option>
+    <option value="25.9吒卡池">25.9吒卡池</option>
+    <option value="29.9吒卡池">29.9吒卡池</option>
+    <option value="金冬天卡池">金冬天卡池</option>
+    <option value="柳智敏卡池">柳智敏卡池</option>
+    <option value="宁艺卓卡池">宁艺卓卡池</option>
+    <option value="吉赛尔卡池">吉赛尔卡池</option>
+    <option value="金智秀卡池">金智秀卡池</option>
+    <option value="lisa卡池">lisa卡池</option>
+    <option value="Jennie卡池">Jennie卡池</option>
+    <option value="rose卡池">rose卡池</option>
+    <option value="宝怪卡池">宝怪卡池</option>
+    <option value="芙卡池">芙卡池</option>
+  </select>
+</div>
 
-    <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
-  </div>
+<div id="adminPanel">
+  <h2>管理员后台</h2>
+  <label for="uploadCategory">上传分类:</label>
+  <select id="uploadCategory">
+    <option value="9.9卡池">9.9卡池</option>
+    <option value="15.9卡池">15.9卡池</option>
+    <option value="星光卡">星光卡</option>
+    <option value="25.9吒卡池">25.9吒卡池</option>
+    <option value="29.9吒卡池">29.9吒卡池</option>
+    <option value="金冬天卡池">金冬天卡池</option>
+    <option value="柳智敏卡池">柳智敏卡池</option>
+    <option value="宁艺卓卡池">宁艺卓卡池</option>
+    <option value="吉赛尔卡池">吉赛尔卡池</option>
+    <option value="金智秀卡池">金智秀卡池</option>
+    <option value="lisa卡池">lisa卡池</option>
+    <option value="Jennie卡池">Jennie卡池</option>
+    <option value="rose卡池">rose卡池</option>
+    <option value="宝怪卡池">宝怪卡池</option>
+    <option value="芙卡池">芙卡池</option>
+  </select>
 
-  <div class="grid" id="cardGrid"></div>
+  <input type="file" id="fileInput" multiple accept="image/*" />
+  <button id="uploadBtn">上传</button>
+  <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
+  <button id="logoutBtn" style="background:#d9534f; color:#fff;">退出登录</button>
+</div>
 
-  <div id="modal">
-    <img id="modalImg" src="" alt="大图预览" />
-  </div>
+<div class="grid" id="cardGrid"></div>
+
+<div id="modal">
+  <img id="modalImg" src="" alt="大图预览" />
+</div>
 
 <script>
+  const ADMIN_PASSWORD = '123456';
+
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
+  const adminPanel = document.getElementById('adminPanel');
+  const uploadCategory = document.getElementById('uploadCategory');
+  const fileInput = document.getElementById('fileInput');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+  const categorySelect = document.getElementById('categorySelect');
+  const cardGrid = document.getElementById('cardGrid');
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modalImg');
+
   const dbName = 'cardDB';
   const storeName = 'cards';
-
   let db;
-  let cardGrid = document.getElementById('cardGrid');
-  let modal = document.getElementById('modal');
-  let modalImg = document.getElementById('modalImg');
-  let categorySelect = document.getElementById('categorySelect');
-  let uploadCategory = document.getElementById('uploadCategory');
-  let fileInput = document.getElementById('fileInput');
-  let deleteAllBtn = document.getElementById('deleteAllBtn');
 
-  // 打开或创建数据库
+  // IndexedDB 打开或创建
   function openDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName, 1);
@@ -212,7 +258,7 @@
     });
   }
 
-  // 获取所有卡片，支持按分类过滤
+  // 获取卡片（按分类）
   function getCards(category = '全部') {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
@@ -251,86 +297,4 @@
 
   // 渲染卡片
   function renderCards(category = '全部') {
-    getCards(category).then(cards => {
-      cardGrid.innerHTML = '';
-      cards.forEach(card => {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'card';
-
-        const img = document.createElement('img');
-        img.src = card.image;
-        img.alt = '小卡图片';
-
-        img.addEventListener('click', () => {
-          modalImg.src = card.image;
-          modal.style.display = 'flex';
-        });
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-btn';
-        delBtn.textContent = '×';
-        delBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await deleteCard(card.id);
-          renderCards(categorySelect.value);
-        });
-
-        cardDiv.appendChild(img);
-        cardDiv.appendChild(delBtn);
-        cardGrid.appendChild(cardDiv);
-      });
-    });
-  }
-
-  // 上传文件处理
-  fileInput.addEventListener('change', () => {
-    const files = fileInput.files;
-    const category = uploadCategory.value;
-
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const card = {
-          id: Date.now() + Math.random(),
-          image: e.target.result,
-          category
-        };
-        await addCard(card);
-        renderCards(categorySelect.value);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    fileInput.value = '';
-  });
-
-  modal.addEventListener('click', () => {
-    modal.style.display = 'none';
-  });
-
-  categorySelect.addEventListener('change', () => {
-    renderCards(categorySelect.value);
-  });
-
-  // 一键删除当前分类所有卡片
-  deleteAllBtn.addEventListener('click', async () => {
-    if (confirm(`确认删除分类 "${categorySelect.value}" 下的所有卡片吗？此操作不可恢复！`)) {
-      try {
-        await deleteAllCardsByCategory(categorySelect.value);
-        renderCards(categorySelect.value);
-        alert('删除成功！');
-      } catch (err) {
-        alert('删除失败：' + err);
-      }
-    }
-  });
-
-  // 初始化
-  openDB().then(() => {
-    renderCards(categorySelect.value);
-  }).catch(err => {
-    alert(err);
-  });
-</script>
-</body>
-</html>
+    getCards(category).then
