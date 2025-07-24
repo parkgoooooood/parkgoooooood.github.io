@@ -328,71 +328,90 @@
     });
   }
 
-  // 管理员登录流程
-  adminLoginBtn.addEventListener('click', () => {
-    const pwd = prompt('请输入管理员密码:');
-    if (pwd === ADMIN_PASSWORD) {
-      adminPanel.style.display = 'block';
-      adminLoginBtn.style.display = 'none';
-    } else {
-      alert('密码错误！');
-    }
-  });
-
-  // 退出登录
-  logoutBtn.addEventListener('click', () => {
-    adminPanel.style.display = 'none';
-    adminLoginBtn.style.display = 'block';
-  });
-
-  // 上传文件
-  uploadBtn.addEventListener('click', () => {
+  // 上传按钮事件（异步批量处理）
+  uploadBtn.addEventListener('click', async () => {
     const files = fileInput.files;
     const category = uploadCategory.value;
     if (!files.length) {
       alert('请选择要上传的图片文件');
       return;
     }
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const card = {
-          id: Date.now() + Math.random(),
-          image: e.target.result,
-          category
+
+    const promises = Array.from(files).map(file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const card = {
+            id: Date.now() + Math.random(),
+            image: e.target.result,
+            category
+          };
+          try {
+            await addCard(card);
+            resolve();
+          } catch {
+            reject('添加卡片失败');
+          }
         };
-        await addCard(card);
-        renderCards(categorySelect.value);
-      };
-      reader.readAsDataURL(file);
+        reader.onerror = () => reject('读取文件失败');
+        reader.readAsDataURL(file);
+      });
     });
-    fileInput.value = '';
+
+    try {
+      await Promise.all(promises);
+      alert('上传成功！');
+      renderCards(categorySelect.value);
+      fileInput.value = '';
+    } catch (err) {
+      alert(err);
+    }
   });
 
   // 一键删除当前分类
   deleteAllBtn.addEventListener('click', async () => {
     const category = categorySelect.value;
-    if (confirm(`确认删除分类 "${category}" 的所有卡片吗？此操作不可恢复！`)) {
+    if (confirm(`确定要删除分类“${category}”的所有卡片吗？此操作不可撤销！`)) {
       await deleteAllCardsByCategory(category);
-      renderCards(category);
+      renderCards(categorySelect.value);
     }
   });
 
-  // 分类筛选
+  // 退出登录
+  logoutBtn.addEventListener('click', () => {
+    adminPanel.style.display = 'none';
+    adminLoginBtn.style.display = 'inline-block';
+  });
+
+  // 管理员登录按钮
+  adminLoginBtn.addEventListener('click', () => {
+    const pwd = prompt('请输入管理员密码:');
+    if (pwd === ADMIN_PASSWORD) {
+      alert('登录成功！');
+      adminPanel.style.display = 'block';
+      adminLoginBtn.style.display = 'none';
+    } else {
+      alert('密码错误');
+    }
+  });
+
+  // 分类筛选切换
   categorySelect.addEventListener('change', () => {
     renderCards(categorySelect.value);
   });
 
-  // 点击大图弹窗关闭
+  // 点击大图关闭弹窗
   modal.addEventListener('click', () => {
     modal.style.display = 'none';
-    modalImg.src = '';
   });
 
-  // 初始化
+  // 初始化打开数据库并渲染
   openDB().then(() => {
     renderCards();
-  }).catch(err => alert(err));
+  }).catch(err => {
+    alert(err);
+  });
 </script>
+
 </body>
 </html>
