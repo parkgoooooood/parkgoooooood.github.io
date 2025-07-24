@@ -267,6 +267,139 @@
     right: 30px;
   }
 
+  /* 登录弹窗 */
+  #loginModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 11000;
+  }
+  #loginBox {
+    background: white;
+    border-radius: 16px;
+    padding: 30px 35px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    width: 320px;
+    text-align: center;
+  }
+  #loginBox h2 {
+    margin-bottom: 20px;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #333;
+  }
+  #loginBox input[type="text"],
+  #loginBox input[type="password"] {
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 16px;
+    border: 1.8px solid #ccc;
+    border-radius: 10px;
+    outline-offset: 2px;
+    outline-color: transparent;
+    transition: outline-color 0.25s ease;
+  }
+  #loginBox input[type="text"]:focus,
+  #loginBox input[type="password"]:focus {
+    outline-color: #3a86ff;
+  }
+  #loginError {
+    color: #e63946;
+    font-weight: 600;
+    margin-bottom: 12px;
+    min-height: 20px;
+  }
+  #loginCloseBtn {
+    position: absolute;
+    top: 10px; right: 14px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #999;
+    cursor: pointer;
+    user-select: none;
+  }
+  #loginCloseBtn:hover {
+    color: #333;
+  }
+
+  /* 头像上传弹窗 */
+  #avatarModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 12000;
+  }
+  #avatarBox {
+    background: white;
+    border-radius: 16px;
+    padding: 25px 30px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    width: 320px;
+    text-align: center;
+    position: relative;
+  }
+  #avatarBox h3 {
+    margin-bottom: 18px;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #333;
+  }
+  #avatarPreview {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #3a86ff;
+    object-fit: cover;
+    margin: 0 auto 20px;
+  }
+  #avatarInput {
+    margin-bottom: 18px;
+  }
+  #avatarUploadBtn {
+    background-color: #3a86ff;
+    color: white;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgb(58 134 255 / 0.5);
+    transition: background-color 0.3s ease;
+  }
+  #avatarUploadBtn:hover {
+    background-color: #265fd0;
+  }
+  #avatarCancelBtn {
+    margin-left: 15px;
+    background-color: #f4a261;
+    color: white;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgb(244 162 97 / 0.7);
+    transition: background-color 0.3s ease;
+  }
+  #avatarCancelBtn:hover {
+    background-color: #ca7f46;
+  }
+  #avatarError {
+    color: #e63946;
+    font-weight: 600;
+    margin-top: 6px;
+    min-height: 20px;
+  }
+  
   /* 响应式适配 */
   @media (max-width: 600px) {
     body {
@@ -285,6 +418,10 @@
       height: auto;
       max-height: 250px;
     }
+    #loginBox, #avatarBox {
+      width: 90vw;
+      padding: 20px;
+    }
   }
 </style>
 </head>
@@ -292,7 +429,7 @@
 
 <button id="adminLoginBtn" title="管理员登录" aria-label="管理员登录">管理员登录</button>
 <button id="adminAvatarBtn" title="管理员已登录" aria-label="管理员已登录" style="display:none;">
-  <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="管理员头像" />
+  <img src="" alt="管理员头像" />
 </button>
 
 <h1>小卡展示（含管理员系统）</h1>
@@ -346,45 +483,77 @@
   <button id="logoutBtn" title="退出管理员登录">退出登录</button>
 </div>
 
-<div class="grid" id="cardGrid" aria-live="polite" aria-label="卡片展示区"></div>
+<div id="cardGrid" class="grid" aria-live="polite" aria-label="卡片展示区域">
+  <!-- 卡片会动态插入 -->
+</div>
 
-<div id="modal" role="dialog" aria-modal="true" aria-label="图片大图预览">
-  <span class="arrow left" id="modalPrev" role="button" tabindex="0" aria-label="上一张图片">&#10094;</span>
-  <img id="modalImg" src="" alt="大图预览" />
-  <span class="arrow right" id="modalNext" role="button" tabindex="0" aria-label="下一张图片">&#10095;</span>
+<!-- 图片放大模态框 -->
+<div id="modal" role="dialog" aria-modal="true" aria-label="图片预览">
+  <span class="arrow left" id="modalPrev" tabindex="0" role="button" aria-label="上一张图片">&#9664;</span>
+  <img id="modalImg" src="" alt="卡片图片" />
+  <span class="arrow right" id="modalNext" tabindex="0" role="button" aria-label="下一张图片">&#9654;</span>
+</div>
+
+<!-- 管理员登录弹窗 -->
+<div id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle" aria-describedby="loginDesc">
+  <div id="loginBox">
+    <div id="loginCloseBtn" title="关闭登录框" role="button" tabindex="0" aria-label="关闭登录框">&times;</div>
+    <h2 id="loginTitle">管理员登录</h2>
+    <div id="loginDesc" style="margin-bottom:10px; color:#555;">请输入管理员账号和密码</div>
+    <input type="text" id="loginUsername" placeholder="账号" autocomplete="username" aria-label="管理员账号" />
+    <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password" aria-label="管理员密码" />
+    <div id="loginError" aria-live="assertive" role="alert"></div>
+    <button id="loginSubmitBtn" title="登录">登录</button>
+  </div>
+</div>
+
+<!-- 头像上传弹窗 -->
+<div id="avatarModal" role="dialog" aria-modal="true" aria-labelledby="avatarTitle" aria-describedby="avatarDesc">
+  <div id="avatarBox">
+    <h3 id="avatarTitle">修改管理员头像</h3>
+    <img id="avatarPreview" src="" alt="头像预览" />
+    <input type="file" id="avatarInput" accept="image/png, image/jpeg, image/jpg, image/gif" aria-label="选择头像图片" />
+    <div id="avatarError" aria-live="assertive" role="alert"></div>
+    <button id="avatarUploadBtn" title="保存头像">保存</button>
+    <button id="avatarCancelBtn" title="取消">取消</button>
+  </div>
 </div>
 
 <script>
-  const ADMIN_PASSWORD = '123456';
+  // 账号密码常量
+  const ADMIN_USERNAME = '15680971688';
+  const ADMIN_PASSWORD = '3866299wei';
 
-  let db;
+  // 默认头像地址（可以改成你喜欢的图标）
+  const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
+  // 变量定义
   let isAdmin = false;
   let currentCategoryCards = [];
   let currentIndex = 0;
+  let db;
 
-  const dbName = 'cardDB';
   const storeName = 'cards';
 
-  // 打开数据库
+  // IndexedDB 初始化
   function openDB() {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName, 1);
-      request.onerror = () => reject('数据库打开失败');
-      request.onsuccess = () => {
-        db = request.result;
-        resolve(db);
-      };
-      request.onupgradeneeded = (e) => {
+      const request = indexedDB.open('cardDB', 1);
+      request.onupgradeneeded = e => {
         db = e.target.result;
         if (!db.objectStoreNames.contains(storeName)) {
-          const store = db.createObjectStore(storeName, { keyPath: 'id' });
-          store.createIndex('category', 'category', { unique: false });
+          db.createObjectStore(storeName, { keyPath: 'id' });
         }
       };
+      request.onsuccess = e => {
+        db = e.target.result;
+        resolve();
+      };
+      request.onerror = e => reject(e.target.error);
     });
   }
 
-  // 添加卡片
+  // 新增卡片
   function addCard(card) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -406,29 +575,28 @@
     });
   }
 
-  // 批量删除当前分类卡片
+  // 删除某分类所有卡片
   function deleteAllCardsByCategory(category) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
-      const index = store.index('category');
-      const range = category === '全部' ? null : IDBKeyRange.only(category);
-      const request = category === '全部' ? store.openCursor() : index.openCursor(range);
-
-      request.onsuccess = e => {
+      const req = store.openCursor();
+      req.onsuccess = async e => {
         const cursor = e.target.result;
         if (cursor) {
-          cursor.delete();
+          if (category === '全部' || cursor.value.category === category) {
+            await deleteCard(cursor.value.id);
+          }
           cursor.continue();
         } else {
           resolve();
         }
       };
-      request.onerror = () => reject('批量删除失败');
+      req.onerror = () => reject('删除分类卡片失败');
     });
   }
 
-  // 更新卡片名称
+  // 修改卡片名称
   function updateCardName(id, newName) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -436,10 +604,6 @@
       const req = store.get(id);
       req.onsuccess = () => {
         const card = req.result;
-        if (!card) {
-          reject('未找到该卡片');
-          return;
-        }
         card.name = newName;
         const updateReq = store.put(card);
         updateReq.onsuccess = () => resolve();
@@ -621,7 +785,7 @@
     await renderCards(category);
   }
 
-  // 管理员登录
+  // 管理员登录流程
   const adminLoginBtn = document.getElementById('adminLoginBtn');
   const adminAvatarBtn = document.getElementById('adminAvatarBtn');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -629,22 +793,75 @@
   const categorySelect = document.getElementById('categorySelect');
   const uploadCategory = document.getElementById('uploadCategory');
 
-  function adminLogin() {
-    const pwd = prompt('请输入管理员密码:');
-    if (pwd === ADMIN_PASSWORD) {
-      isAdmin = true;
-      adminLoginBtn.style.display = 'none';
-      adminAvatarBtn.style.display = 'inline-block';
-      adminPanel.style.display = 'block';
-      categorySelect.disabled = true;
-      uploadCategory.value = categorySelect.value === '全部' ? '9.9卡池' : categorySelect.value;
-      renderCards(categorySelect.value);
-      alert('管理员登录成功！');
+  // 登录弹窗相关
+  const loginModal = document.getElementById('loginModal');
+  const loginUsername = document.getElementById('loginUsername');
+  const loginPassword = document.getElementById('loginPassword');
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+  const loginError = document.getElementById('loginError');
+  const loginCloseBtn = document.getElementById('loginCloseBtn');
+
+  // 头像上传弹窗相关
+  const avatarModal = document.getElementById('avatarModal');
+  const avatarBox = document.getElementById('avatarBox');
+  const avatarPreview = document.getElementById('avatarPreview');
+  const avatarInput = document.getElementById('avatarInput');
+  const avatarUploadBtn = document.getElementById('avatarUploadBtn');
+  const avatarCancelBtn = document.getElementById('avatarCancelBtn');
+  const avatarError = document.getElementById('avatarError');
+
+  // 读取头像，如果localStorage有存，加载它
+  function loadAvatar() {
+    const savedAvatar = localStorage.getItem('adminAvatar');
+    if (savedAvatar) {
+      adminAvatarBtn.querySelector('img').src = savedAvatar;
     } else {
-      alert('密码错误，登录失败！');
+      adminAvatarBtn.querySelector('img').src = DEFAULT_AVATAR;
     }
   }
 
+  // 显示登录弹窗
+  function showLoginModal() {
+    loginUsername.value = '';
+    loginPassword.value = '';
+    loginError.textContent = '';
+    loginModal.style.display = 'flex';
+    loginUsername.focus();
+  }
+
+  // 隐藏登录弹窗
+  function hideLoginModal() {
+    loginModal.style.display = 'none';
+  }
+
+  // 登录验证
+  function loginValidate() {
+    const user = loginUsername.value.trim();
+    const pwd = loginPassword.value;
+    if (user === ADMIN_USERNAME && pwd === ADMIN_PASSWORD) {
+      return true;
+    }
+    return false;
+  }
+
+  // 登录成功后的UI更新
+  function loginSuccess() {
+    isAdmin = true;
+    adminLoginBtn.style.display = 'none';
+    adminAvatarBtn.style.display = 'inline-block';
+    adminPanel.style.display = 'block';
+    categorySelect.disabled = true;
+    uploadCategory.value = categorySelect.value === '全部' ? '9.9卡池' : categorySelect.value;
+    renderCards(categorySelect.value);
+    alert('管理员登录成功！');
+  }
+
+  // 登录失败提示
+  function loginFail() {
+    loginError.textContent = '账号或密码错误，请重试';
+  }
+
+  // 管理员登出
   function adminLogout() {
     if (confirm('确认退出管理员登录？')) {
       isAdmin = false;
@@ -656,11 +873,108 @@
     }
   }
 
-  adminLoginBtn.addEventListener('click', adminLogin);
-  adminAvatarBtn.addEventListener('click', adminLogout);
+  // 头像上传弹窗显示
+  function showAvatarModal() {
+    avatarError.textContent = '';
+    avatarInput.value = '';
+    avatarPreview.src = adminAvatarBtn.querySelector('img').src || DEFAULT_AVATAR;
+    avatarModal.style.display = 'flex';
+  }
+
+  // 头像上传弹窗隐藏
+  function hideAvatarModal() {
+    avatarModal.style.display = 'none';
+  }
+
+  // 头像文件校验和预览
+  avatarInput.addEventListener('change', () => {
+    avatarError.textContent = '';
+    const file = avatarInput.files[0];
+    if (!file) return;
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      avatarError.textContent = '仅支持 PNG/JPG/JPEG/GIF 格式的图片';
+      avatarInput.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) { // 2MB
+      avatarError.textContent = '图片大小不能超过 2MB';
+      avatarInput.value = '';
+      return;
+    }
+    // 预览
+    const reader = new FileReader();
+    reader.onload = e => {
+      avatarPreview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 保存头像
+  avatarUploadBtn.addEventListener('click', () => {
+    const file = avatarInput.files[0];
+    if (!file) {
+      avatarError.textContent = '请选择一张图片上传';
+      return;
+    }
+    // 保存到 localStorage
+    const reader = new FileReader();
+    reader.onload = e => {
+      localStorage.setItem('adminAvatar', e.target.result);
+      loadAvatar();
+      hideAvatarModal();
+      alert('头像修改成功！');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 取消头像修改
+  avatarCancelBtn.addEventListener('click', () => {
+    hideAvatarModal();
+  });
+
+  // 登录按钮事件
+  adminLoginBtn.addEventListener('click', showLoginModal);
+
+  // 登录弹窗关闭按钮事件
+  loginCloseBtn.addEventListener('click', hideLoginModal);
+  loginCloseBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      hideLoginModal();
+    }
+  });
+
+  // 登录弹窗提交按钮
+  loginSubmitBtn.addEventListener('click', () => {
+    if (loginValidate()) {
+      hideLoginModal();
+      loginSuccess();
+    } else {
+      loginFail();
+    }
+  });
+
+  // 登录回车键提交
+  loginModal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      loginSubmitBtn.click();
+    } else if (e.key === 'Escape') {
+      hideLoginModal();
+    }
+  });
+
+  // 头像按钮点击事件，打开头像上传弹窗
+  adminAvatarBtn.addEventListener('click', () => {
+    showAvatarModal();
+  });
+
+  // 退出登录按钮
   logoutBtn.addEventListener('click', adminLogout);
 
-  // 分类选择变化，重新渲染
+  // 分类选择变化，重新渲染（普通用户可操作）
   categorySelect.addEventListener('change', () => {
     if (!isAdmin) {
       renderCards(categorySelect.value);
@@ -684,48 +998,55 @@
     modal.style.display = 'flex';
     updateModalImage();
   }
-
   function closeModal() {
     modal.style.display = 'none';
   }
-
   function updateModalImage() {
-    if (!currentCategoryCards.length) return;
     const card = currentCategoryCards[currentIndex];
     modalImg.src = card.image;
     modalImg.alt = card.name;
   }
-
   function prevImage() {
     if (!currentCategoryCards.length) return;
     currentIndex = (currentIndex - 1 + currentCategoryCards.length) % currentCategoryCards.length;
     updateModalImage();
   }
-
   function nextImage() {
     if (!currentCategoryCards.length) return;
     currentIndex = (currentIndex + 1) % currentCategoryCards.length;
     updateModalImage();
   }
 
-  modalPrev.addEventListener('click', prevImage);
-  modalNext.addEventListener('click', nextImage);
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
+  // 点击模态框箭头切换
+  modalPrev.addEventListener('click', (e) => {
+    e.stopPropagation();
+    prevImage();
+  });
+  modalNext.addEventListener('click', (e) => {
+    e.stopPropagation();
+    nextImage();
   });
 
-  // 键盘事件支持左右切换和关闭模态框
-  document.addEventListener('keydown', (e) => {
+  // 点击模态框空白关闭
+  modal.addEventListener('click', closeModal);
+
+  // 键盘左右控制模态图切换，ESC关闭
+  document.addEventListener('keydown', e => {
     if (modal.style.display === 'flex') {
-      if (e.key === 'ArrowLeft') prevImage();
-      else if (e.key === 'ArrowRight') nextImage();
-      else if (e.key === 'Escape') closeModal();
+      if (e.key === 'ArrowLeft') {
+        prevImage();
+      } else if (e.key === 'ArrowRight') {
+        nextImage();
+      } else if (e.key === 'Escape') {
+        closeModal();
+      }
     }
   });
 
-  // 初始化
-  openDB().then(() => {
+  // 页面加载时初始化
+  window.addEventListener('load', async () => {
+    await openDB();
+    loadAvatar();
     renderCards('全部');
   });
 </script>
