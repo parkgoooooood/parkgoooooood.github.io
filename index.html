@@ -1,84 +1,360 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>小卡展示（含管理员系统）</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet" />
-  <style>
-    /* 样式同你之前的代码，这里略去，为了方便阅读 */
+<meta charset="UTF-8" />
+<title>小卡展示（含管理员系统）</title>
+<!-- 引入谷歌字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  /* 基础重置 */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    margin: 20px auto;
+    max-width: 960px;
+    background: #f9f9fb;
+    color: #222;
+    text-align: center;
+    user-select: none;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 24px;
+    color: #222;
+  }
 
-    /* 你可以把之前的完整 CSS 样式粘贴进这里 */
+  /* 按钮统一样式 */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    background: #3a86ff;
+    color: white;
+    user-select: none;
+  }
+  button:hover:not(:disabled) {
+    background: #265fd0;
+    box-shadow: 0 6px 14px rgb(38 95 208 / 0.4);
+  }
+  button:disabled {
+    cursor: default;
+    background: #a0bfff;
+    box-shadow: none;
+  }
 
-    /* 样式末尾别忘了保留 card-name 的样式 */
-    .card-name {
-      flex-grow: 1;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 600;
-      color: #3a3a3a;
-      padding: 6px 8px 8px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      user-select: text;
+  /* 管理员登录按钮固定 */
+  #adminLoginBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+  }
+  #adminLoginBtn:hover {
+    background: #1a4fbf;
+  }
+
+  /* 管理员面板 */
+  #adminPanel {
+    margin: 0 auto 32px;
+    padding: 20px 25px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.1);
+    max-width: 620px;
+    text-align: left;
+    display: none;
+  }
+  #adminPanel h2 {
+    margin-top: 0;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #333;
+  }
+  #adminPanel label {
+    font-weight: 600;
+    margin-right: 8px;
+    color: #555;
+  }
+  #adminPanel select, #adminPanel input[type="file"] {
+    font-size: 15px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.8px solid #ccc;
+    outline-offset: 2px;
+    outline-color: transparent;
+    transition: outline-color 0.25s ease;
+  }
+  #adminPanel select:focus, #adminPanel input[type="file"]:focus {
+    outline-color: #3a86ff;
+  }
+  #uploadBtn {
+    margin-left: 10px;
+  }
+  #deleteAllBtn {
+    background-color: #e63946;
+    margin-left: 10px;
+  }
+  #deleteAllBtn:hover {
+    background-color: #b72c34;
+  }
+  #logoutBtn {
+    background-color: #f4a261;
+    margin-left: 10px;
+  }
+  #logoutBtn:hover {
+    background-color: #ca7f46;
+  }
+
+  /* 分类筛选 */
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  #categorySelect {
+    font-size: 16px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1.8px solid #bbb;
+    outline-offset: 2px;
+    outline-color: transparent;
+    transition: outline-color 0.25s ease;
+    min-width: 180px;
+  }
+  #categorySelect:focus {
+    outline-color: #3a86ff;
+  }
+
+  /* 卡片容器 */
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+  }
+
+  /* 卡片样式 */
+  .card {
+    position: relative;
+    width: 140px;
+    height: 170px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #ffffff, #d1d9e6);
+    box-shadow: 5px 5px 10px #bec8d9, -5px -5px 10px #ffffff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card:hover {
+    transform: scale(1.08);
+    box-shadow: 8px 8px 16px #b0c0e3, -8px -8px 16px #f0f6ff;
+  }
+  .card img {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+  .delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(230, 46, 46, 0.9);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    border: none;
+    color: white;
+    font-weight: 900;
+    font-size: 18px;
+    line-height: 24px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 0 6px rgba(255, 0, 0, 0.7);
+    transition: background 0.3s ease;
+    z-index: 10;
+  }
+  .delete-btn:hover {
+    background: rgba(230, 46, 46, 1);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.9);
+  }
+
+  /* 名称显示 */
+  .card-name {
+    flex-grow: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3a3a3a;
+    padding: 6px 8px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: text;
+  }
+
+  /* 弹窗样式 */
+  #modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    user-select: none;
+  }
+  #modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 14px;
+    box-shadow: 0 0 24px 6px rgba(255,255,255,0.3);
+    pointer-events: none;
+  }
+  #modal .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #eee;
+    font-size: 60px;
+    cursor: pointer;
+    user-select: none;
+    padding: 0 16px;
+    background: rgba(58, 134, 255, 0.45);
+    border-radius: 50%;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 10px rgba(58,134,255,0.7);
+  }
+  #modal .arrow:hover {
+    background: rgba(58, 134, 255, 0.75);
+    box-shadow: 0 0 16px rgba(58,134,255,0.9);
+  }
+  #modal .arrow.left {
+    left: 30px;
+  }
+  #modal .arrow.right {
+    right: 30px;
+  }
+
+  /* 响应式适配 */
+  @media (max-width: 600px) {
+    body {
+      margin: 12px 10px;
+      max-width: 100%;
     }
-  </style>
+    #adminPanel {
+      padding: 15px 20px;
+      max-width: 100%;
+    }
+    .card {
+      width: 45vw;
+      height: auto;
+    }
+    .card img {
+      height: auto;
+      max-height: 250px;
+    }
+  }
+</style>
 </head>
 <body>
 
-<!-- 管理员登录按钮 -->
 <button id="adminLoginBtn" title="管理员登录">管理员登录</button>
 
 <h1>小卡展示（含管理员系统）</h1>
 
-<!-- 分类选择 -->
 <div class="controls">
   <label for="categorySelect">选择分类:</label>
-  <select id="categorySelect">
+  <select id="categorySelect" aria-label="选择分类">
     <option value="全部">全部</option>
-    <!-- 可添加你的分类选项 -->
     <option value="9.9卡池">9.9卡池</option>
     <option value="15.9卡池">15.9卡池</option>
     <option value="星光卡">星光卡</option>
-    <!-- 更多分类略 -->
+    <option value="25.9吒卡池">25.9吒卡池</option>
+    <option value="29.9吒卡池">29.9吒卡池</option>
+    <option value="金冬天卡池">金冬天卡池</option>
+    <option value="柳智敏卡池">柳智敏卡池</option>
+    <option value="宁艺卓卡池">宁艺卓卡池</option>
+    <option value="吉赛尔卡池">吉赛尔卡池</option>
+    <option value="金智秀卡池">金智秀卡池</option>
+    <option value="lisa卡池">lisa卡池</option>
+    <option value="Jennie卡池">Jennie卡池</option>
+    <option value="rose卡池">rose卡池</option>
+    <option value="宝怪卡池">宝怪卡池</option>
+    <option value="芙卡池">芙卡池</option>
   </select>
 </div>
 
-<!-- 管理员后台 -->
-<div id="adminPanel" style="display: none;">
+<div id="adminPanel" role="region" aria-label="管理员后台">
   <h2>管理员后台</h2>
   <label for="uploadCategory">上传分类:</label>
-  <select id="uploadCategory">
+  <select id="uploadCategory" aria-label="上传分类">
     <option value="9.9卡池">9.9卡池</option>
     <option value="15.9卡池">15.9卡池</option>
     <option value="星光卡">星光卡</option>
+    <option value="25.9吒卡池">25.9吒卡池</option>
+    <option value="29.9吒卡池">29.9吒卡池</option>
+    <option value="金冬天卡池">金冬天卡池</option>
+    <option value="柳智敏卡池">柳智敏卡池</option>
+    <option value="宁艺卓卡池">宁艺卓卡池</option>
+    <option value="吉赛尔卡池">吉赛尔卡池</option>
+    <option value="金智秀卡池">金智秀卡池</option>
+    <option value="lisa卡池">lisa卡池</option>
+    <option value="Jennie卡池">Jennie卡池</option>
+    <option value="rose卡池">rose卡池</option>
+    <option value="宝怪卡池">宝怪卡池</option>
+    <option value="芙卡池">芙卡池</option>
   </select>
-  <input type="file" id="fileInput" multiple accept="image/*" />
-  <button id="uploadBtn">上传</button>
-  <button id="deleteAllBtn">删除当前分类</button>
-  <button id="logoutBtn">退出登录</button>
+
+  <input type="file" id="fileInput" multiple accept="image/*" aria-label="上传图片" />
+  <button id="uploadBtn" title="上传选中的图片">上传</button>
+  <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
+  <button id="logoutBtn" title="退出管理员登录">退出登录</button>
 </div>
 
-<!-- 展示区 -->
-<div class="grid" id="cardGrid"></div>
+<div class="grid" id="cardGrid" aria-live="polite" aria-label="卡片展示区"></div>
 
-<!-- 图片弹窗 -->
-<div id="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); justify-content:center; align-items:center; z-index:9999;">
-  <span class="arrow left" id="modalPrev" style="position:absolute; left:30px; font-size:60px; color:white; cursor:pointer;">&#10094;</span>
-  <img id="modalImg" src="" alt="大图" style="max-width:90vw; max-height:90vh; border-radius:14px;" />
-  <span class="arrow right" id="modalNext" style="position:absolute; right:30px; font-size:60px; color:white; cursor:pointer;">&#10095;</span>
+<div id="modal" role="dialog" aria-modal="true" aria-label="图片大图预览">
+  <span class="arrow left" id="modalPrev" role="button" tabindex="0" aria-label="上一张图片">&#10094;</span>
+  <img id="modalImg" src="" alt="大图预览" />
+  <span class="arrow right" id="modalNext" role="button" tabindex="0" aria-label="下一张图片">&#10095;</span>
 </div>
 
 <script>
   const ADMIN_PASSWORD = '123456';
-  let db, isAdmin = false, currentCategoryCards = [], currentIndex = 0;
-  const dbName = 'cardDB', storeName = 'cards';
 
+  let db;
+  let isAdmin = false;
+  let currentCategoryCards = [];
+  let currentIndex = 0;
+
+  const dbName = 'cardDB';
+  const storeName = 'cards';
+
+  // 打开数据库
   function openDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName, 1);
       request.onerror = () => reject('数据库打开失败');
-      request.onsuccess = () => { db = request.result; resolve(db); };
+      request.onsuccess = () => {
+        db = request.result;
+        resolve(db);
+      };
       request.onupgradeneeded = (e) => {
         db = e.target.result;
         if (!db.objectStoreNames.contains(storeName)) {
@@ -89,6 +365,7 @@
     });
   }
 
+  // 添加卡片
   function addCard(card) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -99,6 +376,7 @@
     });
   }
 
+  // 删除卡片
   function deleteCard(id) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -109,6 +387,7 @@
     });
   }
 
+  // 批量删除当前分类卡片
   function deleteAllCardsByCategory(category) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -116,6 +395,7 @@
       const index = store.index('category');
       const range = category === '全部' ? null : IDBKeyRange.only(category);
       const request = category === '全部' ? store.openCursor() : index.openCursor(range);
+
       request.onsuccess = e => {
         const cursor = e.target.result;
         if (cursor) {
@@ -129,159 +409,139 @@
     });
   }
 
-  function updateCardName(id, newName) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      const request = store.get(id);
-      request.onsuccess = () => {
-        const card = request.result;
-        card.name = newName;
-        const updateReq = store.put(card);
-        updateReq.onsuccess = () => resolve();
-        updateReq.onerror = () => reject('更新失败');
-      };
-      request.onerror = () => reject('读取失败');
-    });
-  }
-
+  // 获取卡片
   function getCards(category = '全部') {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
       const store = tx.objectStore(storeName);
       const cards = [];
-      const method = category === '全部' ? store.openCursor() : store.index('category').openCursor(IDBKeyRange.only(category));
-      method.onsuccess = e => {
-        const cursor = e.target.result;
-        if (cursor) {
-          cards.push(cursor.value);
-          cursor.continue();
-        } else {
-          resolve(cards);
-        }
-      };
-      method.onerror = () => reject('获取失败');
+
+      if (category === '全部') {
+        const request = store.openCursor();
+        request.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            cards.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(cards);
+          }
+        };
+        request.onerror = () => reject('获取卡片失败');
+      } else {
+        const index = store.index('category');
+        const range = IDBKeyRange.only(category);
+        const request = index.openCursor(range);
+        request.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            cards.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(cards);
+          }
+        };
+        request.onerror = () => reject('获取卡片失败');
+      }
     });
   }
 
+  // 渲染卡片
   function renderCards(category = '全部') {
-    getCards(category).then(cards => {
+    return getCards(category).then(cards => {
       currentCategoryCards = cards;
-      const grid = document.getElementById('cardGrid');
-      grid.innerHTML = '';
+      const cardGrid = document.getElementById('cardGrid');
+      cardGrid.innerHTML = '';
       cards.forEach((card, index) => {
-        const div = document.createElement('div');
-        div.className = 'card';
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
 
         const img = document.createElement('img');
         img.src = card.image;
-        img.alt = card.name || '小卡';
+        img.alt = card.name || '小卡图片';
+
         img.addEventListener('click', () => {
           currentIndex = index;
           openModal();
         });
-        div.appendChild(img);
-
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'card-name';
-        nameDiv.textContent = card.name || '';
-        if (isAdmin) {
-          nameDiv.style.cursor = 'pointer';
-          nameDiv.title = '双击修改名称';
-          nameDiv.addEventListener('dblclick', () => {
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = card.name || '';
-            input.className = 'card-name';
-            input.style.width = '90%';
-            input.style.margin = '0 auto';
-            input.style.fontSize = '13px';
-            input.style.fontWeight = '600';
-            input.style.textAlign = 'center';
-            input.style.border = '1px solid #aaa';
-            input.style.borderRadius = '6px';
-            input.style.padding = '4px 6px';
-            nameDiv.replaceWith(input);
-            input.focus();
-
-            const save = async () => {
-              const newName = input.value.trim();
-              if (newName && newName !== card.name) {
-                await updateCardName(card.id, newName);
-              }
-              await renderCards(document.getElementById('categorySelect').value);
-            };
-
-            input.addEventListener('blur', save);
-            input.addEventListener('keydown', e => {
-              if (e.key === 'Enter') input.blur();
-              if (e.key === 'Escape') renderCards(document.getElementById('categorySelect').value);
-            });
-          });
-        }
-        div.appendChild(nameDiv);
 
         if (isAdmin) {
           const delBtn = document.createElement('button');
-          delBtn.textContent = '×';
           delBtn.className = 'delete-btn';
+          delBtn.title = '删除该卡片';
+          delBtn.textContent = '×';
           delBtn.addEventListener('click', async e => {
             e.stopPropagation();
-            if (confirm('确认删除？')) {
+            if (confirm('确定删除该卡片吗？')) {
               await deleteCard(card.id);
               await renderCards(document.getElementById('categorySelect').value);
             }
           });
-          div.appendChild(delBtn);
+          cardDiv.appendChild(delBtn);
         }
 
-        grid.appendChild(div);
+        cardDiv.appendChild(img);
+
+        // 显示图片名称
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'card-name';
+        nameDiv.textContent = card.name || '';
+        cardDiv.appendChild(nameDiv);
+
+        cardGrid.appendChild(cardDiv);
       });
     });
   }
 
+  // 文件转base64
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = e => resolve(e.target.result);
-      reader.onerror = () => reject('读取失败');
+      reader.onerror = () => reject('读取文件失败');
       reader.readAsDataURL(file);
     });
   }
 
+  // 弹窗打开
   function openModal() {
     const modal = document.getElementById('modal');
     modal.style.display = 'flex';
     updateModalImage();
   }
 
+  // 更新弹窗图片
   function updateModalImage() {
     const modalImg = document.getElementById('modalImg');
-    if (!currentCategoryCards.length) return;
+    if (currentCategoryCards.length === 0) return;
     modalImg.src = currentCategoryCards[currentIndex].image;
-    modalImg.alt = currentCategoryCards[currentIndex].name || '预览图';
+    modalImg.alt = currentCategoryCards[currentIndex].name || '大图预览';
   }
 
+  // 关闭弹窗
   function closeModal() {
-    document.getElementById('modal').style.display = 'none';
+    const modal = document.getElementById('modal');
+    modal.style.display = 'none';
   }
 
+  // 绑定事件
   function bindEvents() {
     const adminLoginBtn = document.getElementById('adminLoginBtn');
     const adminPanel = document.getElementById('adminPanel');
+    const uploadCategory = document.getElementById('uploadCategory');
     const fileInput = document.getElementById('fileInput');
     const uploadBtn = document.getElementById('uploadBtn');
-    const deleteAllBtn = document.getElementById('deleteAllBtn');
     const logoutBtn = document.getElementById('logoutBtn');
-    const uploadCategory = document.getElementById('uploadCategory');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
     const categorySelect = document.getElementById('categorySelect');
-    const modal = document.getElementById('modal');
     const modalPrev = document.getElementById('modalPrev');
     const modalNext = document.getElementById('modalNext');
+    const modal = document.getElementById('modal');
 
-    adminLoginBtn.onclick = () => {
-      const pwd = prompt('请输入管理员密码：');
+    adminLoginBtn.addEventListener('click', () => {
+      const pwd = prompt('请输入管理员密码:');
       if (pwd === ADMIN_PASSWORD) {
+        alert('登录成功！');
         isAdmin = true;
         adminPanel.style.display = 'block';
         adminLoginBtn.style.display = 'none';
@@ -289,58 +549,109 @@
       } else {
         alert('密码错误');
       }
-    };
+    });
 
-    logoutBtn.onclick = () => {
+    logoutBtn.addEventListener('click', () => {
       isAdmin = false;
       adminPanel.style.display = 'none';
       adminLoginBtn.style.display = 'inline-block';
       renderCards(categorySelect.value);
-    };
+    });
 
-    uploadBtn.onclick = async () => {
+    uploadBtn.addEventListener('click', async () => {
       const files = fileInput.files;
       const category = uploadCategory.value;
-      if (!files.length) return alert('请选择图片');
+
+      if (!files.length) {
+        alert('请选择至少一张图片上传');
+        return;
+      }
+
       for (const file of files) {
-        const base64 = await fileToBase64(file);
-        await addCard({ id: Date.now() + Math.random(), image: base64, category, name: file.name });
+        try {
+          const base64 = await fileToBase64(file);
+          const card = {
+            id: Date.now() + Math.random(),
+            image: base64,
+            category,
+            name: file.name
+          };
+          await addCard(card);
+        } catch (err) {
+          alert(err);
+        }
       }
       fileInput.value = '';
       await renderCards(categorySelect.value);
-    };
+    });
 
-    deleteAllBtn.onclick = async () => {
-      if (confirm('删除当前分类所有卡片？')) {
+    deleteAllBtn.addEventListener('click', async () => {
+      if (confirm(`确定要删除分类 "${categorySelect.value}" 的所有卡片吗？此操作不可恢复！`)) {
         await deleteAllCardsByCategory(categorySelect.value);
         await renderCards(categorySelect.value);
       }
-    };
+    });
 
-    categorySelect.onchange = () => renderCards(categorySelect.value);
+    categorySelect.addEventListener('change', () => {
+      renderCards(categorySelect.value);
+    });
 
-    modalPrev.onclick = () => {
+    // 弹窗左右箭头事件
+    modalPrev.addEventListener('click', e => {
+      e.stopPropagation();
+      if (currentCategoryCards.length === 0) return;
       currentIndex = (currentIndex - 1 + currentCategoryCards.length) % currentCategoryCards.length;
       updateModalImage();
-    };
-    modalNext.onclick = () => {
+    });
+
+    modalNext.addEventListener('click', e => {
+      e.stopPropagation();
+      if (currentCategoryCards.length === 0) return;
       currentIndex = (currentIndex + 1) % currentCategoryCards.length;
       updateModalImage();
-    };
-    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-    window.onkeydown = (e) => {
-      if (modal.style.display === 'flex') {
-        if (e.key === 'ArrowLeft') modalPrev.click();
-        if (e.key === 'ArrowRight') modalNext.click();
-        if (e.key === 'Escape') closeModal();
+    });
+
+    // 点击遮罩关闭弹窗（点击图片和箭头不关闭）
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        closeModal();
       }
-    };
+    });
+
+    // 键盘事件支持左右切换和ESC关闭
+    window.addEventListener('keydown', e => {
+      if (modal.style.display === 'flex') {
+        if (e.key === 'ArrowLeft') {
+          modalPrev.click();
+        } else if (e.key === 'ArrowRight') {
+          modalNext.click();
+        } else if (e.key === 'Escape') {
+          closeModal();
+        }
+      }
+    });
+
+    // 支持键盘操作箭头按钮（回车/空格触发）
+    [modalPrev, modalNext].forEach(arrowBtn => {
+      arrowBtn.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          arrowBtn.click();
+        }
+      });
+    });
   }
 
-  openDB().then(() => {
-    bindEvents();
-    renderCards();
-  });
+  // 初始化
+  openDB()
+    .then(() => {
+      bindEvents();
+      renderCards();
+    })
+    .catch(err => {
+      alert(err);
+    });
 </script>
+
 </body>
 </html>
