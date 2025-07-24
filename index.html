@@ -194,8 +194,8 @@
   const dbName = 'cardDB';
   const storeName = 'cards';
   let db;
+  let isAdmin = false;
 
-  // IndexedDB 打开或创建
   function openDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName, 1);
@@ -214,7 +214,6 @@
     });
   }
 
-  // 添加卡片
   function addCard(card) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -225,7 +224,6 @@
     });
   }
 
-  // 删除卡片
   function deleteCard(id) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -236,7 +234,6 @@
     });
   }
 
-  // 批量删除指定分类所有卡片
   function deleteAllCardsByCategory(category) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -258,7 +255,6 @@
     });
   }
 
-  // 获取卡片（按分类）
   function getCards(category = '全部') {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
@@ -295,7 +291,6 @@
     });
   }
 
-  // 渲染卡片
   function renderCards(category = '全部') {
     getCards(category).then(cards => {
       cardGrid.innerHTML = '';
@@ -312,95 +307,81 @@
           modal.style.display = 'flex';
         });
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-btn';
-        delBtn.textContent = '×';
-        delBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await deleteCard(card.id);
-          renderCards(categorySelect.value);
-        });
+        if (isAdmin) {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'delete-btn';
+          delBtn.textContent = '×';
+          delBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await deleteCard(card.id);
+            renderCards(categorySelect.value);
+          });
+          cardDiv.appendChild(delBtn);
+        }
 
         cardDiv.appendChild(img);
-        cardDiv.appendChild(delBtn);
         cardGrid.appendChild(cardDiv);
       });
     });
   }
 
-  // 上传按钮事件（异步批量处理）
-  uploadBtn.addEventListener('click', async () => {
-    const files = fileInput.files;
-    const category = uploadCategory.value;
-    if (!files.length) {
-      alert('请选择要上传的图片文件');
-      return;
-    }
-
-    const promises = Array.from(files).map(file => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const card = {
-            id: Date.now() + Math.random(),
-            image: e.target.result,
-            category
-          };
-          try {
-            await addCard(card);
-            resolve();
-          } catch {
-            reject('添加卡片失败');
-          }
-        };
-        reader.onerror = () => reject('读取文件失败');
-        reader.readAsDataURL(file);
-      });
-    });
-
-    try {
-      await Promise.all(promises);
-      alert('上传成功！');
-      renderCards(categorySelect.value);
-      fileInput.value = '';
-    } catch (err) {
-      alert(err);
-    }
-  });
-
-  // 一键删除当前分类
-  deleteAllBtn.addEventListener('click', async () => {
-    const category = categorySelect.value;
-    if (confirm(`确定要删除分类“${category}”的所有卡片吗？此操作不可撤销！`)) {
-      await deleteAllCardsByCategory(category);
-      renderCards(categorySelect.value);
-    }
-  });
-
-  // 退出登录
-  logoutBtn.addEventListener('click', () => {
-    adminPanel.style.display = 'none';
-    adminLoginBtn.style.display = 'inline-block';
-  });
-
-  // 管理员登录按钮
   adminLoginBtn.addEventListener('click', () => {
     const pwd = prompt('请输入管理员密码:');
     if (pwd === ADMIN_PASSWORD) {
       alert('登录成功！');
+      isAdmin = true;
       adminPanel.style.display = 'block';
       adminLoginBtn.style.display = 'none';
+      renderCards(categorySelect.value);
     } else {
       alert('密码错误');
     }
   });
 
-  // 分类筛选切换
+  logoutBtn.addEventListener('click', () => {
+    isAdmin = false;
+    adminPanel.style.display = 'none';
+    adminLoginBtn.style.display = 'inline-block';
+    renderCards(categorySelect.value);
+  });
+
+  uploadBtn.addEventListener('click', () => {
+    const files = fileInput.files;
+    const category = uploadCategory.value;
+
+    if (!files.length) {
+      alert('请选择至少一张图片上传');
+      return;
+    }
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const card = {
+          id: Date.now() + Math.random(),
+          image: e.target.result,
+          category
+        };
+        await addCard(card);
+        renderCards(categorySelect.value);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    fileInput.value = '';
+  });
+
+  deleteAllBtn.addEventListener('click', async () => {
+    if (confirm(`确定要删除分类 "${categorySelect.value}" 的所有卡片吗？此操作不可恢复！`)) {
+      await deleteAllCardsByCategory(categorySelect.value);
+      renderCards(categorySelect.value);
+    }
+  });
+
   categorySelect.addEventListener('change', () => {
     renderCards(categorySelect.value);
   });
 
-  // 点击大图关闭弹窗
   modal.addEventListener('click', () => {
     modal.style.display = 'none';
   });
