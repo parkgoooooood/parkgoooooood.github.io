@@ -1,657 +1,339 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8" />
-<title>小卡展示（含管理员系统）</title>
-<!-- 引入谷歌字体 -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet" />
-<style>
-  /* 基础重置 */
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    font-family: 'Noto Sans SC', sans-serif;
-    margin: 20px auto;
-    max-width: 960px;
-    background: #f9f9fb;
-    color: #222;
-    text-align: center;
-    user-select: none;
-  }
-  h1 {
-    font-weight: 700;
-    font-size: 2rem;
-    margin-bottom: 24px;
-    color: #222;
-  }
-
-  /* 按钮统一样式 */
-  button {
-    cursor: pointer;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
-    background: #3a86ff;
-    color: white;
-    user-select: none;
-  }
-  button:hover:not(:disabled) {
-    background: #265fd0;
-    box-shadow: 0 6px 14px rgb(38 95 208 / 0.4);
-  }
-  button:disabled {
-    cursor: default;
-    background: #a0bfff;
-    box-shadow: none;
-  }
-
-  /* 管理员登录按钮固定 */
-  #adminLoginBtn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-  }
-  #adminLoginBtn:hover {
-    background: #1a4fbf;
-  }
-
-  /* 管理员面板 */
-  #adminPanel {
-    margin: 0 auto 32px;
-    padding: 20px 25px;
-    border-radius: 12px;
-    background: white;
-    box-shadow: 0 6px 20px rgb(0 0 0 / 0.1);
-    max-width: 620px;
-    text-align: left;
-    display: none;
-  }
-  #adminPanel h2 {
-    margin-top: 0;
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: #333;
-  }
-  #adminPanel label {
-    font-weight: 600;
-    margin-right: 8px;
-    color: #555;
-  }
-  #adminPanel select, #adminPanel input[type="file"] {
-    font-size: 15px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1.8px solid #ccc;
-    outline-offset: 2px;
-    outline-color: transparent;
-    transition: outline-color 0.25s ease;
-  }
-  #adminPanel select:focus, #adminPanel input[type="file"]:focus {
-    outline-color: #3a86ff;
-  }
-  #uploadBtn {
-    margin-left: 10px;
-  }
-  #deleteAllBtn {
-    background-color: #e63946;
-    margin-left: 10px;
-  }
-  #deleteAllBtn:hover {
-    background-color: #b72c34;
-  }
-  #logoutBtn {
-    background-color: #f4a261;
-    margin-left: 10px;
-  }
-  #logoutBtn:hover {
-    background-color: #ca7f46;
-  }
-
-  /* 分类筛选 */
-  .controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  #categorySelect {
-    font-size: 16px;
-    padding: 8px 14px;
-    border-radius: 10px;
-    border: 1.8px solid #bbb;
-    outline-offset: 2px;
-    outline-color: transparent;
-    transition: outline-color 0.25s ease;
-    min-width: 180px;
-  }
-  #categorySelect:focus {
-    outline-color: #3a86ff;
-  }
-
-  /* 卡片容器 */
-  .grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    justify-content: center;
-  }
-
-  /* 卡片样式 */
-  .card {
-    position: relative;
-    width: 140px;
-    height: 170px;
-    border-radius: 16px;
-    background: linear-gradient(145deg, #ffffff, #d1d9e6);
-    box-shadow: 5px 5px 10px #bec8d9, -5px -5px 10px #ffffff;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  .card:hover {
-    transform: scale(1.08);
-    box-shadow: 8px 8px 16px #b0c0e3, -8px -8px 16px #f0f6ff;
-  }
-  .card img {
-    width: 100%;
-    height: 130px;
-    object-fit: cover;
-    flex-shrink: 0;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-  }
-  .delete-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(230, 46, 46, 0.9);
-    border-radius: 50%;
-    width: 26px;
-    height: 26px;
-    border: none;
-    color: white;
-    font-weight: 900;
-    font-size: 18px;
-    line-height: 24px;
-    cursor: pointer;
-    user-select: none;
-    box-shadow: 0 0 6px rgba(255, 0, 0, 0.7);
-    transition: background 0.3s ease;
-    z-index: 10;
-  }
-  .delete-btn:hover {
-    background: rgba(230, 46, 46, 1);
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.9);
-  }
-
-  /* 名称显示 */
-  .card-name {
-    flex-grow: 1;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #3a3a3a;
-    padding: 6px 8px 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    user-select: text;
-  }
-
-  /* 弹窗样式 */
-  #modal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.75);
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    user-select: none;
-  }
-  #modal img {
-    max-width: 90vw;
-    max-height: 90vh;
-    border-radius: 14px;
-    box-shadow: 0 0 24px 6px rgba(255,255,255,0.3);
-    pointer-events: none;
-  }
-  #modal .arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #eee;
-    font-size: 60px;
-    cursor: pointer;
-    user-select: none;
-    padding: 0 16px;
-    background: rgba(58, 134, 255, 0.45);
-    border-radius: 50%;
-    transition: background 0.3s ease;
-    box-shadow: 0 0 10px rgba(58,134,255,0.7);
-  }
-  #modal .arrow:hover {
-    background: rgba(58, 134, 255, 0.75);
-    box-shadow: 0 0 16px rgba(58,134,255,0.9);
-  }
-  #modal .arrow.left {
-    left: 30px;
-  }
-  #modal .arrow.right {
-    right: 30px;
-  }
-
-  /* 响应式适配 */
-  @media (max-width: 600px) {
+  <meta charset="UTF-8" />
+  <title>小卡展示系统</title>
+  <style>
     body {
-      margin: 12px 10px;
-      max-width: 100%;
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f2f2f2;
+      color: #333;
     }
-    #adminPanel {
-      padding: 15px 20px;
-      max-width: 100%;
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      padding: 8px;
+      font-size: 14px;
+    }
+    #cardGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 15px;
     }
     .card {
-      width: 45vw;
-      height: auto;
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      position: relative;
     }
     .card img {
+      width: 100%;
       height: auto;
-      max-height: 250px;
+      border-radius: 4px;
+      cursor: pointer;
     }
-  }
-</style>
+    .card-name {
+      font-size: 12px;
+      margin-top: 6px;
+      text-align: center;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .card-name[contenteditable="true"] {
+      border-bottom: 1px dashed #aaa;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    #modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 999;
+    }
+    #modal img {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 6px;
+    }
+    .modal-nav {
+      color: white;
+      font-size: 40px;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      user-select: none;
+    }
+    #modal .left { left: 10px; }
+    #modal .right { right: 10px; }
+    #closeModal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-<button id="adminLoginBtn" title="管理员登录">管理员登录</button>
+<h1>韩娱小卡展示</h1>
 
-<h1>小卡展示（含管理员系统）</h1>
-
-<div class="controls">
-  <label for="categorySelect">选择分类:</label>
-  <select id="categorySelect" aria-label="选择分类">
+<div id="controls">
+  <input type="file" id="uploadInput" multiple accept="image/*" style="display:none">
+  <select id="categorySelect">
     <option value="全部">全部</option>
-    <option value="9.9卡池">9.9卡池</option>
-    <option value="15.9卡池">15.9卡池</option>
-    <option value="星光卡">星光卡</option>
-    <option value="25.9吒卡池">25.9吒卡池</option>
-    <option value="29.9吒卡池">29.9吒卡池</option>
-    <option value="金冬天卡池">金冬天卡池</option>
-    <option value="柳智敏卡池">柳智敏卡池</option>
-    <option value="宁艺卓卡池">宁艺卓卡池</option>
-    <option value="吉赛尔卡池">吉赛尔卡池</option>
-    <option value="金智秀卡池">金智秀卡池</option>
-    <option value="lisa卡池">lisa卡池</option>
-    <option value="Jennie卡池">Jennie卡池</option>
-    <option value="rose卡池">rose卡池</option>
-    <option value="宝怪卡池">宝怪卡池</option>
-    <option value="芙卡池">芙卡池</option>
   </select>
+  <button id="uploadBtn" style="display:none">上传卡片</button>
+  <button id="deleteAllBtn" style="display:none">删除该分类所有卡片</button>
+  <button id="loginBtn">管理员登录</button>
+  <button id="logoutBtn" style="display:none">退出登录</button>
 </div>
 
-<div id="adminPanel" role="region" aria-label="管理员后台">
-  <h2>管理员后台</h2>
-  <label for="uploadCategory">上传分类:</label>
-  <select id="uploadCategory" aria-label="上传分类">
-    <option value="9.9卡池">9.9卡池</option>
-    <option value="15.9卡池">15.9卡池</option>
-    <option value="星光卡">星光卡</option>
-    <option value="25.9吒卡池">25.9吒卡池</option>
-    <option value="29.9吒卡池">29.9吒卡池</option>
-    <option value="金冬天卡池">金冬天卡池</option>
-    <option value="柳智敏卡池">柳智敏卡池</option>
-    <option value="宁艺卓卡池">宁艺卓卡池</option>
-    <option value="吉赛尔卡池">吉赛尔卡池</option>
-    <option value="金智秀卡池">金智秀卡池</option>
-    <option value="lisa卡池">lisa卡池</option>
-    <option value="Jennie卡池">Jennie卡池</option>
-    <option value="rose卡池">rose卡池</option>
-    <option value="宝怪卡池">宝怪卡池</option>
-    <option value="芙卡池">芙卡池</option>
-  </select>
+<div id="cardGrid"></div>
 
-  <input type="file" id="fileInput" multiple accept="image/*" aria-label="上传图片" />
-  <button id="uploadBtn" title="上传选中的图片">上传</button>
-  <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
-  <button id="logoutBtn" title="退出管理员登录">退出登录</button>
-</div>
-
-<div class="grid" id="cardGrid" aria-live="polite" aria-label="卡片展示区"></div>
-
-<div id="modal" role="dialog" aria-modal="true" aria-label="图片大图预览">
-  <span class="arrow left" id="modalPrev" role="button" tabindex="0" aria-label="上一张图片">&#10094;</span>
-  <img id="modalImg" src="" alt="大图预览" />
-  <span class="arrow right" id="modalNext" role="button" tabindex="0" aria-label="下一张图片">&#10095;</span>
+<!-- 大图预览模态框 -->
+<div id="modal">
+  <span id="closeModal">✕</span>
+  <span class="modal-nav left">‹</span>
+  <img id="modalImg" src="" />
+  <span class="modal-nav right">›</span>
 </div>
 
 <script>
-  const ADMIN_PASSWORD = '123456';
+let db, isAdmin = false, currentCategory = "全部", currentIndex = 0, currentCards = [];
 
-  let db;
-  let isAdmin = false;
-  let currentCategoryCards = [];
-  let currentIndex = 0;
+const uploadInput = document.getElementById("uploadInput");
+const categorySelect = document.getElementById("categorySelect");
+const uploadBtn = document.getElementById("uploadBtn");
+const deleteAllBtn = document.getElementById("deleteAllBtn");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const cardGrid = document.getElementById("cardGrid");
 
-  const dbName = 'cardDB';
-  const storeName = 'cards';
+const modal = document.getElementById("modal");
+const modalImg = document.getElementById("modalImg");
+const closeModalBtn = document.getElementById("closeModal");
+const leftNav = modal.querySelector(".left");
+const rightNav = modal.querySelector(".right");
 
-  // 打开数据库
-  function openDB() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName, 1);
-      request.onerror = () => reject('数据库打开失败');
-      request.onsuccess = () => {
-        db = request.result;
-        resolve(db);
-      };
-      request.onupgradeneeded = (e) => {
-        db = e.target.result;
-        if (!db.objectStoreNames.contains(storeName)) {
-          const store = db.createObjectStore(storeName, { keyPath: 'id' });
-          store.createIndex('category', 'category', { unique: false });
-        }
-      };
-    });
+openDB();
+
+categorySelect.addEventListener("change", () => {
+  currentCategory = categorySelect.value;
+  renderCards(currentCategory);
+});
+
+uploadBtn.addEventListener("click", () => uploadInput.click());
+uploadInput.addEventListener("change", handleUpload);
+
+deleteAllBtn.addEventListener("click", async () => {
+  if (confirm("确定删除该分类所有卡片吗？")) {
+    await deleteCategory(currentCategory);
+    renderCards(currentCategory);
   }
+});
 
-  // 添加卡片
-  function addCard(card) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      const req = store.add(card);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject('添加卡片失败');
-    });
+loginBtn.addEventListener("click", () => {
+  const pwd = prompt("请输入管理员密码：");
+  if (pwd === "123456") {
+    isAdmin = true;
+    uploadBtn.style.display = deleteAllBtn.style.display = logoutBtn.style.display = "inline-block";
+    loginBtn.style.display = "none";
+  } else {
+    alert("密码错误！");
   }
+});
 
-  // 删除卡片
-  function deleteCard(id) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject('删除卡片失败');
+logoutBtn.addEventListener("click", () => {
+  isAdmin = false;
+  uploadBtn.style.display = deleteAllBtn.style.display = logoutBtn.style.display = "none";
+  loginBtn.style.display = "inline-block";
+});
+
+closeModalBtn.onclick = () => modal.style.display = "none";
+leftNav.onclick = () => { if (currentIndex > 0) { currentIndex--; updateModal(); } };
+rightNav.onclick = () => { if (currentIndex < currentCards.length - 1) { currentIndex++; updateModal(); } };
+
+function openModal(index) {
+  currentIndex = index;
+  updateModal();
+  modal.style.display = "flex";
+}
+
+function updateModal() {
+  modalImg.src = currentCards[currentIndex].image;
+}
+
+async function openDB() {
+  const request = indexedDB.open("cardDB", 1);
+  request.onerror = () => alert("打开数据库失败！");
+  request.onsuccess = () => {
+    db = request.result;
+    renderCards(currentCategory);
+    loadCategories();
+  };
+  request.onupgradeneeded = e => {
+    db = e.target.result;
+    db.createObjectStore("cards", { keyPath: "id" });
+  };
+}
+
+function addCard(card) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("cards", "readwrite");
+    const store = tx.objectStore("cards");
+    store.add(card);
+    tx.oncomplete = resolve;
+    tx.onerror = reject;
+  });
+}
+
+function getCards() {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("cards", "readonly");
+    const store = tx.objectStore("cards");
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = reject;
+  });
+}
+
+function deleteCard(id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("cards", "readwrite");
+    tx.objectStore("cards").delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = reject;
+  });
+}
+
+function deleteCategory(category) {
+  return getCards().then(cards => {
+    const tx = db.transaction("cards", "readwrite");
+    const store = tx.objectStore("cards");
+    cards.forEach(card => {
+      if (card.category === category) store.delete(card.id);
     });
-  }
+  });
+}
 
-  // 批量删除当前分类卡片
-  function deleteAllCardsByCategory(category) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      const index = store.index('category');
-      const range = category === '全部' ? null : IDBKeyRange.only(category);
-      const request = category === '全部' ? store.openCursor() : index.openCursor(range);
+async function renderCards(category) {
+  const cards = await getCards();
+  currentCards = cards.filter(c => category === "全部" || c.category === category);
+  cardGrid.innerHTML = "";
+  currentCards.forEach((card, index) => {
+    const div = document.createElement("div");
+    div.className = "card";
 
-      request.onsuccess = e => {
-        const cursor = e.target.result;
-        if (cursor) {
-          cursor.delete();
-          cursor.continue();
-        } else {
-          resolve();
-        }
-      };
-      request.onerror = () => reject('批量删除失败');
-    });
-  }
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.alt = card.name || "";
+    img.onclick = () => openModal(index);
+    div.appendChild(img);
 
-  // 获取卡片
-  function getCards(category = '全部') {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readonly');
-      const store = tx.objectStore(storeName);
-      const cards = [];
-
-      if (category === '全部') {
-        const request = store.openCursor();
-        request.onsuccess = e => {
-          const cursor = e.target.result;
-          if (cursor) {
-            cards.push(cursor.value);
-            cursor.continue();
-          } else {
-            resolve(cards);
-          }
-        };
-        request.onerror = () => reject('获取卡片失败');
-      } else {
-        const index = store.index('category');
-        const range = IDBKeyRange.only(category);
-        const request = index.openCursor(range);
-        request.onsuccess = e => {
-          const cursor = e.target.result;
-          if (cursor) {
-            cards.push(cursor.value);
-            cursor.continue();
-          } else {
-            resolve(cards);
-          }
-        };
-        request.onerror = () => reject('获取卡片失败');
-      }
-    });
-  }
-
-  // 渲染卡片
-  function renderCards(category = '全部') {
-    return getCards(category).then(cards => {
-      currentCategoryCards = cards;
-      const cardGrid = document.getElementById('cardGrid');
-      cardGrid.innerHTML = '';
-      cards.forEach((card, index) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'card';
-
-        const img = document.createElement('img');
-        img.src = card.image;
-        img.alt = card.name || '小卡图片';
-
-        img.addEventListener('click', () => {
-          currentIndex = index;
-          openModal();
-        });
-
-        if (isAdmin) {
-          const delBtn = document.createElement('button');
-          delBtn.className = 'delete-btn';
-          delBtn.title = '删除该卡片';
-          delBtn.textContent = '×';
-          delBtn.addEventListener('click', async e => {
-            e.stopPropagation();
-            if (confirm('确定删除该卡片吗？')) {
-              await deleteCard(card.id);
-              await renderCards(document.getElementById('categorySelect').value);
-            }
-          });
-          cardDiv.appendChild(delBtn);
-        }
-
-        cardDiv.appendChild(img);
-
-        // 显示图片名称
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'card-name';
-        nameDiv.textContent = card.name || '';
-        cardDiv.appendChild(nameDiv);
-
-        cardGrid.appendChild(cardDiv);
-      });
-    });
-  }
-
-  // 文件转base64
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.onerror = () => reject('读取文件失败');
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // 弹窗打开
-  function openModal() {
-    const modal = document.getElementById('modal');
-    modal.style.display = 'flex';
-    updateModalImage();
-  }
-
-  // 更新弹窗图片
-  function updateModalImage() {
-    const modalImg = document.getElementById('modalImg');
-    if (currentCategoryCards.length === 0) return;
-    modalImg.src = currentCategoryCards[currentIndex].image;
-    modalImg.alt = currentCategoryCards[currentIndex].name || '大图预览';
-  }
-
-  // 关闭弹窗
-  function closeModal() {
-    const modal = document.getElementById('modal');
-    modal.style.display = 'none';
-  }
-
-  // 绑定事件
-  function bindEvents() {
-    const adminLoginBtn = document.getElementById('adminLoginBtn');
-    const adminPanel = document.getElementById('adminPanel');
-    const uploadCategory = document.getElementById('uploadCategory');
-    const fileInput = document.getElementById('fileInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const deleteAllBtn = document.getElementById('deleteAllBtn');
-    const categorySelect = document.getElementById('categorySelect');
-    const modalPrev = document.getElementById('modalPrev');
-    const modalNext = document.getElementById('modalNext');
-    const modal = document.getElementById('modal');
-
-    adminLoginBtn.addEventListener('click', () => {
-      const pwd = prompt('请输入管理员密码:');
-      if (pwd === ADMIN_PASSWORD) {
-        alert('登录成功！');
-        isAdmin = true;
-        adminPanel.style.display = 'block';
-        adminLoginBtn.style.display = 'none';
-        renderCards(categorySelect.value);
-      } else {
-        alert('密码错误');
-      }
-    });
-
-    logoutBtn.addEventListener('click', () => {
-      isAdmin = false;
-      adminPanel.style.display = 'none';
-      adminLoginBtn.style.display = 'inline-block';
-      renderCards(categorySelect.value);
-    });
-
-    uploadBtn.addEventListener('click', async () => {
-      const files = fileInput.files;
-      const category = uploadCategory.value;
-
-      if (!files.length) {
-        alert('请选择至少一张图片上传');
-        return;
-      }
-
-      for (const file of files) {
-        try {
-          const base64 = await fileToBase64(file);
-          const card = {
-            id: Date.now() + Math.random(),
-            image: base64,
-            category,
-            name: file.name
-          };
-          await addCard(card);
-        } catch (err) {
-          alert(err);
-        }
-      }
-      fileInput.value = '';
-      await renderCards(categorySelect.value);
-    });
-
-    deleteAllBtn.addEventListener('click', async () => {
-      if (confirm(`确定要删除分类 "${categorySelect.value}" 的所有卡片吗？此操作不可恢复！`)) {
-        await deleteAllCardsByCategory(categorySelect.value);
-        await renderCards(categorySelect.value);
-      }
-    });
-
-    categorySelect.addEventListener('change', () => {
-      renderCards(categorySelect.value);
-    });
-
-    // 弹窗左右箭头事件
-    modalPrev.addEventListener('click', e => {
-      e.stopPropagation();
-      if (currentCategoryCards.length === 0) return;
-      currentIndex = (currentIndex - 1 + currentCategoryCards.length) % currentCategoryCards.length;
-      updateModalImage();
-    });
-
-    modalNext.addEventListener('click', e => {
-      e.stopPropagation();
-      if (currentCategoryCards.length === 0) return;
-      currentIndex = (currentIndex + 1) % currentCategoryCards.length;
-      updateModalImage();
-    });
-
-    // 点击遮罩关闭弹窗（点击图片和箭头不关闭）
-    modal.addEventListener('click', e => {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
-
-    // 键盘事件支持左右切换和ESC关闭
-    window.addEventListener('keydown', e => {
-      if (modal.style.display === 'flex') {
-        if (e.key === 'ArrowLeft') {
-          modalPrev.click();
-        } else if (e.key === 'ArrowRight') {
-          modalNext.click();
-        } else if (e.key === 'Escape') {
-          closeModal();
-        }
-      }
-    });
-
-    // 支持键盘操作箭头按钮（回车/空格触发）
-    [modalPrev, modalNext].forEach(arrowBtn => {
-      arrowBtn.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
+    const name = document.createElement("div");
+    name.className = "card-name";
+    name.textContent = card.name || "";
+    if (isAdmin) {
+      name.contentEditable = true;
+      name.title = "点击修改名称，回车保存";
+      name.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
           e.preventDefault();
-          arrowBtn.click();
+          card.name = name.textContent;
+          const tx = db.transaction("cards", "readwrite");
+          tx.objectStore("cards").put(card);
         }
       });
+    }
+    div.appendChild(name);
+
+    if (isAdmin) {
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.textContent = "×";
+      delBtn.onclick = async e => {
+        e.stopPropagation();
+        if (confirm("删除这张卡片？")) {
+          await deleteCard(card.id);
+          renderCards(category);
+        }
+      };
+      div.appendChild(delBtn);
+    }
+
+    cardGrid.appendChild(div);
+  });
+}
+
+function loadCategories() {
+  getCards().then(cards => {
+    const cats = new Set(cards.map(c => c.category));
+    categorySelect.innerHTML = '<option value="全部">全部</option>';
+    cats.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      categorySelect.appendChild(opt);
     });
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleUpload(e) {
+  const files = e.target.files;
+  const category = prompt("请输入该批卡片所属分类：") || "未分类";
+  for (const file of files) {
+    const base64 = await fileToBase64(file);
+    const card = {
+      id: Date.now() + Math.random(),
+      image: base64,
+      category,
+      name: file.name
+    };
+    await addCard(card);
   }
-
-  // 初始化
-  openDB()
-    .then(() => {
-      bindEvents();
-      renderCards();
-    })
-    .catch(err => {
-      alert(err);
-    });
+  uploadInput.value = "";
+  renderCards(currentCategory);
+  loadCategories();
+}
 </script>
-
 </body>
 </html>
