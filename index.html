@@ -446,6 +446,27 @@
     });
   }
 
+  // 更新卡片名称
+  function updateCardName(id, newName) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const card = req.result;
+        if (!card) {
+          reject('未找到卡片');
+          return;
+        }
+        card.name = newName;
+        const updateReq = store.put(card);
+        updateReq.onsuccess = () => resolve();
+        updateReq.onerror = () => reject('更新名称失败');
+      };
+      req.onerror = () => reject('获取卡片失败');
+    });
+  }
+
   // 渲染卡片
   function renderCards(category = '全部') {
     return getCards(category).then(cards => {
@@ -482,10 +503,31 @@
 
         cardDiv.appendChild(img);
 
-        // 显示图片名称
+        // 显示图片名称，管理员可双击修改
         const nameDiv = document.createElement('div');
         nameDiv.className = 'card-name';
         nameDiv.textContent = card.name || '';
+
+        if (isAdmin) {
+          nameDiv.style.cursor = 'pointer';
+          nameDiv.title = '双击修改名称';
+          nameDiv.addEventListener('dblclick', async e => {
+            e.stopPropagation();
+            const newName = prompt('请输入新的卡片名称:', card.name || '');
+            if (newName !== null) {
+              const trimmed = newName.trim();
+              if (trimmed !== '' && trimmed !== card.name) {
+                try {
+                  await updateCardName(card.id, trimmed);
+                  await renderCards(document.getElementById('categorySelect').value);
+                } catch (err) {
+                  alert(err);
+                }
+              }
+            }
+          });
+        }
+
         cardDiv.appendChild(nameDiv);
 
         cardGrid.appendChild(cardDiv);
@@ -493,8 +535,8 @@
     });
   }
 
-  // 文件转base64
-  function fileToBase64(file) {
+  // 读取文件转base64
+  function readFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = e => resolve(e.target.result);
@@ -503,154 +545,146 @@
     });
   }
 
-  // 弹窗打开
+  // 生成唯一ID
+  function generateId() {
+    return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  }
+
+  // 上传图片
+  async function uploadImages(files, category) {
+    for (const file of files) {
+      const base64 = await readFileAsDataURL(file);
+      const card = {
+        id: generateId(),
+        category,
+        name: file.name.replace(/\.[^/.]+$/, ""), // 去除扩展名作为默认名称
+        image: base64
+      };
+      await addCard(card);
+    }
+  }
+
+  // 管理员登录处理
+  function adminLogin() {
+    const pwd = prompt('请输入管理员密码:');
+    if (pwd === ADMIN_PASSWORD) {
+      isAdmin = true;
+      document.getElementById('adminLoginBtn').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('categorySelect').disabled = true;
+      renderCards(document.getElementById('categorySelect').value);
+      alert('管理员登录成功！');
+    } else {
+      alert('密码错误，登录失败！');
+    }
+  }
+
+  // 管理员退出登录
+  function adminLogout() {
+    if (confirm('确认退出管理员登录？')) {
+      isAdmin = false;
+      document.getElementById('adminLoginBtn').style.display = 'inline-block';
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('categorySelect').disabled = false;
+      renderCards(document.getElementById('categorySelect').value);
+    }
+  }
+
+  // 大图弹窗相关
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modalImg');
+  const modalPrev = document.getElementById('modalPrev');
+  const modalNext = document.getElementById('modalNext');
+
   function openModal() {
-    const modal = document.getElementById('modal');
-    modal.style.display = 'flex';
-    updateModalImage();
-  }
-
-  // 更新弹窗图片
-  function updateModalImage() {
-    const modalImg = document.getElementById('modalImg');
     if (currentCategoryCards.length === 0) return;
-    modalImg.src = currentCategoryCards[currentIndex].image;
-    modalImg.alt = currentCategoryCards[currentIndex].name || '大图预览';
+    modal.style.display = 'flex';
+    showModalImage();
   }
 
-  // 关闭弹窗
   function closeModal() {
-    const modal = document.getElementById('modal');
     modal.style.display = 'none';
   }
 
-  // 绑定事件
-  function bindEvents() {
-    const adminLoginBtn = document.getElementById('adminLoginBtn');
-    const adminPanel = document.getElementById('adminPanel');
-    const uploadCategory = document.getElementById('uploadCategory');
-    const fileInput = document.getElementById('fileInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const deleteAllBtn = document.getElementById('deleteAllBtn');
-    const categorySelect = document.getElementById('categorySelect');
-    const modalPrev = document.getElementById('modalPrev');
-    const modalNext = document.getElementById('modalNext');
-    const modal = document.getElementById('modal');
-
-    adminLoginBtn.addEventListener('click', () => {
-      const pwd = prompt('请输入管理员密码:');
-      if (pwd === ADMIN_PASSWORD) {
-        alert('登录成功！');
-        isAdmin = true;
-        adminPanel.style.display = 'block';
-        adminLoginBtn.style.display = 'none';
-        renderCards(categorySelect.value);
-      } else {
-        alert('密码错误');
-      }
-    });
-
-    logoutBtn.addEventListener('click', () => {
-      isAdmin = false;
-      adminPanel.style.display = 'none';
-      adminLoginBtn.style.display = 'inline-block';
-      renderCards(categorySelect.value);
-    });
-
-    uploadBtn.addEventListener('click', async () => {
-      const files = fileInput.files;
-      const category = uploadCategory.value;
-
-      if (!files.length) {
-        alert('请选择至少一张图片上传');
-        return;
-      }
-
-      for (const file of files) {
-        try {
-          const base64 = await fileToBase64(file);
-          const card = {
-            id: Date.now() + Math.random(),
-            image: base64,
-            category,
-            name: file.name
-          };
-          await addCard(card);
-        } catch (err) {
-          alert(err);
-        }
-      }
-      fileInput.value = '';
-      await renderCards(categorySelect.value);
-    });
-
-    deleteAllBtn.addEventListener('click', async () => {
-      if (confirm(`确定要删除分类 "${categorySelect.value}" 的所有卡片吗？此操作不可恢复！`)) {
-        await deleteAllCardsByCategory(categorySelect.value);
-        await renderCards(categorySelect.value);
-      }
-    });
-
-    categorySelect.addEventListener('change', () => {
-      renderCards(categorySelect.value);
-    });
-
-    // 弹窗左右箭头事件
-    modalPrev.addEventListener('click', e => {
-      e.stopPropagation();
-      if (currentCategoryCards.length === 0) return;
-      currentIndex = (currentIndex - 1 + currentCategoryCards.length) % currentCategoryCards.length;
-      updateModalImage();
-    });
-
-    modalNext.addEventListener('click', e => {
-      e.stopPropagation();
-      if (currentCategoryCards.length === 0) return;
-      currentIndex = (currentIndex + 1) % currentCategoryCards.length;
-      updateModalImage();
-    });
-
-    // 点击遮罩关闭弹窗（点击图片和箭头不关闭）
-    modal.addEventListener('click', e => {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
-
-    // 键盘事件支持左右切换和ESC关闭
-    window.addEventListener('keydown', e => {
-      if (modal.style.display === 'flex') {
-        if (e.key === 'ArrowLeft') {
-          modalPrev.click();
-        } else if (e.key === 'ArrowRight') {
-          modalNext.click();
-        } else if (e.key === 'Escape') {
-          closeModal();
-        }
-      }
-    });
-
-    // 支持键盘操作箭头按钮（回车/空格触发）
-    [modalPrev, modalNext].forEach(arrowBtn => {
-      arrowBtn.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          arrowBtn.click();
-        }
-      });
-    });
+  function showModalImage() {
+    const card = currentCategoryCards[currentIndex];
+    modalImg.src = card.image;
+    modalImg.alt = card.name || '大图预览';
   }
 
+  function showPrev() {
+    if (currentCategoryCards.length === 0) return;
+    currentIndex = (currentIndex - 1 + currentCategoryCards.length) % currentCategoryCards.length;
+    showModalImage();
+  }
+
+  function showNext() {
+    if (currentCategoryCards.length === 0) return;
+    currentIndex = (currentIndex + 1) % currentCategoryCards.length;
+    showModalImage();
+  }
+
+  // 点击模态窗空白关闭
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+  // 键盘支持关闭和切换
+  window.addEventListener('keydown', e => {
+    if (modal.style.display === 'flex') {
+      if (e.key === 'Escape') closeModal();
+      else if (e.key === 'ArrowLeft') showPrev();
+      else if (e.key === 'ArrowRight') showNext();
+    }
+  });
+  modalPrev.addEventListener('click', e => { e.stopPropagation(); showPrev(); });
+  modalNext.addEventListener('click', e => { e.stopPropagation(); showNext(); });
+
   // 初始化
-  openDB()
-    .then(() => {
-      bindEvents();
-      renderCards();
-    })
-    .catch(err => {
+  openDB().then(() => {
+    renderCards('全部');
+  });
+
+  // 绑定事件
+  document.getElementById('adminLoginBtn').addEventListener('click', adminLogin);
+  document.getElementById('logoutBtn').addEventListener('click', adminLogout);
+
+  document.getElementById('categorySelect').addEventListener('change', e => {
+    renderCards(e.target.value);
+  });
+
+  document.getElementById('uploadBtn').addEventListener('click', async () => {
+    const files = document.getElementById('fileInput').files;
+    if (files.length === 0) {
+      alert('请先选择图片文件');
+      return;
+    }
+    const category = document.getElementById('uploadCategory').value;
+    document.getElementById('uploadBtn').disabled = true;
+    try {
+      await uploadImages(files, category);
+      alert('上传成功');
+      document.getElementById('fileInput').value = '';
+      renderCards(document.getElementById('categorySelect').value);
+    } catch (err) {
       alert(err);
-    });
+    }
+    document.getElementById('uploadBtn').disabled = false;
+  });
+
+  document.getElementById('deleteAllBtn').addEventListener('click', async () => {
+    if (!isAdmin) return alert('请先管理员登录');
+    const category = document.getElementById('categorySelect').value;
+    if (confirm(`确定删除分类 "${category}" 的所有卡片吗？此操作不可恢复！`)) {
+      try {
+        await deleteAllCardsByCategory(category);
+        alert('删除成功');
+        renderCards(category);
+      } catch (err) {
+        alert(err);
+      }
+    }
+  });
+
 </script>
 
 </body>
