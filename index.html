@@ -3,111 +3,217 @@
 <head>
 <meta charset="UTF-8" />
 <title>小卡展示（含管理员系统）</title>
+<!-- 引入谷歌字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet" />
 <style>
-  body { font-family: sans-serif; margin: 20px; text-align: center; }
+  /* 基础重置 */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    margin: 20px auto;
+    max-width: 960px;
+    background: #f9f9fb;
+    color: #222;
+    text-align: center;
+    user-select: none;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 24px;
+    color: #222;
+  }
+
+  /* 按钮统一样式 */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    background: #3a86ff;
+    color: white;
+    user-select: none;
+  }
+  button:hover:not(:disabled) {
+    background: #265fd0;
+    box-shadow: 0 6px 14px rgb(38 95 208 / 0.4);
+  }
+  button:disabled {
+    cursor: default;
+    background: #a0bfff;
+    box-shadow: none;
+  }
+
+  /* 管理员登录按钮固定 */
   #adminLoginBtn {
     position: fixed;
-    top: 10px; right: 10px;
-    padding: 6px 12px;
-    background-color: #337ab7;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    top: 20px;
+    right: 20px;
     z-index: 10000;
   }
-  #adminLoginBtn:hover { background-color: #286090; }
-  #adminPanel {
-    margin-top: 20px;
-    padding: 15px;
-    border: 2px solid #337ab7;
-    border-radius: 8px;
-    display: none;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: left;
+  #adminLoginBtn:hover {
+    background: #1a4fbf;
   }
-  #adminPanel label, #adminPanel select, #adminPanel input, #adminPanel button {
-    margin-right: 10px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    padding: 5px 8px;
+
+  /* 管理员面板 */
+  #adminPanel {
+    margin: 0 auto 32px;
+    padding: 20px 25px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.1);
+    max-width: 620px;
+    text-align: left;
+    display: none;
+  }
+  #adminPanel h2 {
+    margin-top: 0;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #333;
+  }
+  #adminPanel label {
+    font-weight: 600;
+    margin-right: 8px;
+    color: #555;
+  }
+  #adminPanel select, #adminPanel input[type="file"] {
+    font-size: 15px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.8px solid #ccc;
+    outline-offset: 2px;
+    outline-color: transparent;
+    transition: outline-color 0.25s ease;
+  }
+  #adminPanel select:focus, #adminPanel input[type="file"]:focus {
+    outline-color: #3a86ff;
+  }
+  #uploadBtn {
+    margin-left: 10px;
   }
   #deleteAllBtn {
-    background-color: #d9534f;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    background-color: #e63946;
+    margin-left: 10px;
   }
-  #deleteAllBtn:hover { background-color: #c9302c; }
+  #deleteAllBtn:hover {
+    background-color: #b72c34;
+  }
+  #logoutBtn {
+    background-color: #f4a261;
+    margin-left: 10px;
+  }
+  #logoutBtn:hover {
+    background-color: #ca7f46;
+  }
+
+  /* 分类筛选 */
   .controls {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
   }
-  #categorySelect, #uploadCategory {
+  #categorySelect {
     font-size: 16px;
-    padding: 6px 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1.8px solid #bbb;
+    outline-offset: 2px;
+    outline-color: transparent;
+    transition: outline-color 0.25s ease;
+    min-width: 180px;
   }
-  #fileInput { cursor: pointer; }
+  #categorySelect:focus {
+    outline-color: #3a86ff;
+  }
+
+  /* 卡片容器 */
   .grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 16px;
     justify-content: center;
-    margin-top: 10px;
   }
+
+  /* 卡片样式 */
   .card {
     position: relative;
-    width: 120px; 
-    height: 150px; /* 增高给名称预留空间 */
-    border: 1px solid #ccc;
-    overflow: hidden;
-    border-radius: 8px;
+    width: 140px;
+    height: 170px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #ffffff, #d1d9e6);
+    box-shadow: 5px 5px 10px #bec8d9, -5px -5px 10px #ffffff;
     cursor: pointer;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card:hover {
+    transform: scale(1.08);
+    box-shadow: 8px 8px 16px #b0c0e3, -8px -8px 16px #f0f6ff;
   }
   .card img {
-    width: 100%; 
-    height: 120px;
+    width: 100%;
+    height: 130px;
     object-fit: cover;
     flex-shrink: 0;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
   }
   .delete-btn {
     position: absolute;
-    top: 3px; right: 3px;
-    background: rgba(255,0,0,0.8);
-    border: none;
+    top: 8px;
+    right: 8px;
+    background: rgba(230, 46, 46, 0.9);
     border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    border: none;
     color: white;
-    width: 22px; height: 22px;
-    font-size: 16px;
+    font-weight: 900;
+    font-size: 18px;
+    line-height: 24px;
     cursor: pointer;
     user-select: none;
+    box-shadow: 0 0 6px rgba(255, 0, 0, 0.7);
+    transition: background 0.3s ease;
     z-index: 10;
   }
+  .delete-btn:hover {
+    background: rgba(230, 46, 46, 1);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.9);
+  }
+
+  /* 名称显示 */
   .card-name {
+    flex-grow: 1;
     text-align: center;
-    font-size: 12px;
-    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3a3a3a;
+    padding: 6px 8px 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     user-select: text;
   }
+
+  /* 弹窗样式 */
   #modal {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.75);
     justify-content: center;
     align-items: center;
     z-index: 9999;
@@ -116,40 +222,65 @@
   #modal img {
     max-width: 90vw;
     max-height: 90vh;
-    border-radius: 8px;
-    box-shadow: 0 0 10px #fff;
+    border-radius: 14px;
+    box-shadow: 0 0 24px 6px rgba(255,255,255,0.3);
     pointer-events: none;
   }
   #modal .arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    color: white;
-    font-size: 50px;
+    color: #eee;
+    font-size: 60px;
     cursor: pointer;
     user-select: none;
-    padding: 0 10px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 3px;
-    user-select: none;
+    padding: 0 16px;
+    background: rgba(58, 134, 255, 0.45);
+    border-radius: 50%;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 10px rgba(58,134,255,0.7);
+  }
+  #modal .arrow:hover {
+    background: rgba(58, 134, 255, 0.75);
+    box-shadow: 0 0 16px rgba(58,134,255,0.9);
   }
   #modal .arrow.left {
-    left: 20px;
+    left: 30px;
   }
   #modal .arrow.right {
-    right: 20px;
+    right: 30px;
+  }
+
+  /* 响应式适配 */
+  @media (max-width: 600px) {
+    body {
+      margin: 12px 10px;
+      max-width: 100%;
+    }
+    #adminPanel {
+      padding: 15px 20px;
+      max-width: 100%;
+    }
+    .card {
+      width: 45vw;
+      height: auto;
+    }
+    .card img {
+      height: auto;
+      max-height: 250px;
+    }
   }
 </style>
 </head>
 <body>
 
-<button id="adminLoginBtn">管理员登录</button>
+<button id="adminLoginBtn" title="管理员登录">管理员登录</button>
 
 <h1>小卡展示（含管理员系统）</h1>
 
 <div class="controls">
   <label for="categorySelect">选择分类:</label>
-  <select id="categorySelect">
+  <select id="categorySelect" aria-label="选择分类">
     <option value="全部">全部</option>
     <option value="9.9卡池">9.9卡池</option>
     <option value="15.9卡池">15.9卡池</option>
@@ -169,10 +300,10 @@
   </select>
 </div>
 
-<div id="adminPanel">
+<div id="adminPanel" role="region" aria-label="管理员后台">
   <h2>管理员后台</h2>
   <label for="uploadCategory">上传分类:</label>
-  <select id="uploadCategory">
+  <select id="uploadCategory" aria-label="上传分类">
     <option value="9.9卡池">9.9卡池</option>
     <option value="15.9卡池">15.9卡池</option>
     <option value="星光卡">星光卡</option>
@@ -190,30 +321,32 @@
     <option value="芙卡池">芙卡池</option>
   </select>
 
-  <input type="file" id="fileInput" multiple accept="image/*" />
-  <button id="uploadBtn">上传</button>
+  <input type="file" id="fileInput" multiple accept="image/*" aria-label="上传图片" />
+  <button id="uploadBtn" title="上传选中的图片">上传</button>
   <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
-  <button id="logoutBtn" style="background:#d9534f; color:#fff;">退出登录</button>
+  <button id="logoutBtn" title="退出管理员登录">退出登录</button>
 </div>
 
-<div class="grid" id="cardGrid"></div>
+<div class="grid" id="cardGrid" aria-live="polite" aria-label="卡片展示区"></div>
 
-<div id="modal">
-  <div class="arrow left" id="modalPrev">&#8249;</div>
+<div id="modal" role="dialog" aria-modal="true" aria-label="图片大图预览">
+  <span class="arrow left" id="modalPrev" role="button" tabindex="0" aria-label="上一张图片">&#10094;</span>
   <img id="modalImg" src="" alt="大图预览" />
-  <div class="arrow right" id="modalNext">&#8250;</div>
+  <span class="arrow right" id="modalNext" role="button" tabindex="0" aria-label="下一张图片">&#10095;</span>
 </div>
 
 <script>
   const ADMIN_PASSWORD = '123456';
-  const dbName = 'cardDB';
-  const storeName = 'cards';
 
   let db;
   let isAdmin = false;
   let currentCategoryCards = [];
   let currentIndex = 0;
 
+  const dbName = 'cardDB';
+  const storeName = 'cards';
+
+  // 打开数据库
   function openDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName, 1);
@@ -222,7 +355,7 @@
         db = request.result;
         resolve(db);
       };
-      request.onupgradeneeded = e => {
+      request.onupgradeneeded = (e) => {
         db = e.target.result;
         if (!db.objectStoreNames.contains(storeName)) {
           const store = db.createObjectStore(storeName, { keyPath: 'id' });
@@ -232,39 +365,36 @@
     });
   }
 
+  // 添加卡片
   function addCard(card) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
-      const request = store.add(card);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject('添加卡片失败');
+      const req = store.add(card);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject('添加卡片失败');
     });
   }
 
+  // 删除卡片
   function deleteCard(id) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
-      const request = store.delete(id);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject('删除卡片失败');
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject('删除卡片失败');
     });
   }
 
+  // 批量删除当前分类卡片
   function deleteAllCardsByCategory(category) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
       const index = store.index('category');
-      let request;
-
-      if (category === '全部') {
-        request = store.openCursor();
-      } else {
-        const range = IDBKeyRange.only(category);
-        request = index.openCursor(range);
-      }
+      const range = category === '全部' ? null : IDBKeyRange.only(category);
+      const request = category === '全部' ? store.openCursor() : index.openCursor(range);
 
       request.onsuccess = e => {
         const cursor = e.target.result;
@@ -279,6 +409,7 @@
     });
   }
 
+  // 获取卡片
   function getCards(category = '全部') {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
@@ -315,6 +446,7 @@
     });
   }
 
+  // 渲染卡片
   function renderCards(category = '全部') {
     return getCards(category).then(cards => {
       currentCategoryCards = cards;
@@ -342,7 +474,7 @@
             e.stopPropagation();
             if (confirm('确定删除该卡片吗？')) {
               await deleteCard(card.id);
-              await renderCards(categorySelect.value);
+              await renderCards(document.getElementById('categorySelect').value);
             }
           });
           cardDiv.appendChild(delBtn);
@@ -361,6 +493,7 @@
     });
   }
 
+  // 文件转base64
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -391,6 +524,7 @@
     modal.style.display = 'none';
   }
 
+  // 绑定事件
   function bindEvents() {
     const adminLoginBtn = document.getElementById('adminLoginBtn');
     const adminPanel = document.getElementById('adminPanel');
@@ -462,10 +596,7 @@
       renderCards(categorySelect.value);
     });
 
-    // 大图弹窗左右箭头
-    const modalPrev = document.getElementById('modalPrev');
-    const modalNext = document.getElementById('modalNext');
-
+    // 弹窗左右箭头事件
     modalPrev.addEventListener('click', e => {
       e.stopPropagation();
       if (currentCategoryCards.length === 0) return;
@@ -499,9 +630,19 @@
         }
       }
     });
+
+    // 支持键盘操作箭头按钮（回车/空格触发）
+    [modalPrev, modalNext].forEach(arrowBtn => {
+      arrowBtn.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          arrowBtn.click();
+        }
+      });
+    });
   }
 
-  // 初始化打开数据库并绑定事件、渲染卡片
+  // 初始化
   openDB()
     .then(() => {
       bindEvents();
