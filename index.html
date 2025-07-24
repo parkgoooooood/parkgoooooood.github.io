@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8" />
-<title>小卡展示（含管理员系统）</title>
+<title>小卡展示（含名称 & 管理员系统）</title>
 <style>
   body { font-family: sans-serif; margin: 20px; text-align: center; }
   #adminLoginBtn {
@@ -51,6 +51,18 @@
   #deleteAllBtn:hover {
     background-color: #c9302c;
   }
+  #logoutBtn {
+    font-size: 14px;
+    padding: 7px 15px;
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #logoutBtn:hover {
+    background-color: #ec971f;
+  }
   .controls {
     display: flex;
     justify-content: center;
@@ -65,7 +77,7 @@
     border-radius: 5px;
     border: 1px solid #ccc;
   }
-  #fileInput {
+  #fileInput, #cardNameInput {
     cursor: pointer;
   }
   .grid {
@@ -77,15 +89,26 @@
   }
   .card {
     position: relative;
-    width: 120px; height: 120px;
+    width: 120px; 
     border: 1px solid #ccc;
-    overflow: hidden;
     border-radius: 8px;
     cursor: pointer;
+    background: #fff;
+    box-sizing: border-box;
+    padding: 8px 8px 12px;
   }
   .card img {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 120px;
     object-fit: cover;
+    border-radius: 6px;
+  }
+  .card-name {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #333;
+    word-break: break-word;
+    user-select: none;
   }
   .delete-btn {
     position: absolute;
@@ -97,6 +120,7 @@
     width: 22px; height: 22px;
     font-size: 16px;
     cursor: pointer;
+    user-select: none;
   }
   #modal {
     display: none;
@@ -119,7 +143,7 @@
 
 <button id="adminLoginBtn">管理员登录</button>
 
-<h1>小卡展示（含管理员系统）</h1>
+<h1>小卡展示（含名称 & 管理员系统）</h1>
 
 <div class="controls">
   <label for="categorySelect">选择分类:</label>
@@ -164,10 +188,13 @@
     <option value="芙卡池">芙卡池</option>
   </select>
 
+  <label for="cardNameInput">卡片名称:</label>
+  <input type="text" id="cardNameInput" placeholder="请输入卡片名称" />
+
   <input type="file" id="fileInput" multiple accept="image/*" />
   <button id="uploadBtn">上传</button>
   <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
-  <button id="logoutBtn" style="background:#d9534f; color:#fff;">退出登录</button>
+  <button id="logoutBtn">退出登录</button>
 </div>
 
 <div class="grid" id="cardGrid"></div>
@@ -177,7 +204,7 @@
 </div>
 
 <script>
-  const ADMIN_PASSWORD = '123456';
+  const ADMIN_PASSWORD = '123456'; // 你可以修改密码
 
   const adminLoginBtn = document.getElementById('adminLoginBtn');
   const adminPanel = document.getElementById('adminPanel');
@@ -190,12 +217,14 @@
   const cardGrid = document.getElementById('cardGrid');
   const modal = document.getElementById('modal');
   const modalImg = document.getElementById('modalImg');
+  const cardNameInput = document.getElementById('cardNameInput');
 
   const dbName = 'cardDB';
   const storeName = 'cards';
   let db;
   let isAdmin = false;
 
+  // 打开或创建数据库
   function openDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName, 1);
@@ -214,6 +243,7 @@
     });
   }
 
+  // 添加卡片
   function addCard(card) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -224,6 +254,7 @@
     });
   }
 
+  // 删除卡片
   function deleteCard(id) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -234,6 +265,7 @@
     });
   }
 
+  // 批量删除指定分类所有卡片
   function deleteAllCardsByCategory(category) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -255,6 +287,7 @@
     });
   }
 
+  // 获取卡片（按分类）
   function getCards(category = '全部') {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
@@ -291,6 +324,7 @@
     });
   }
 
+  // 渲染卡片
   function renderCards(category = '全部') {
     getCards(category).then(cards => {
       cardGrid.innerHTML = '';
@@ -300,12 +334,19 @@
 
         const img = document.createElement('img');
         img.src = card.image;
-        img.alt = '小卡图片';
+        img.alt = card.name || '小卡图片';
 
         img.addEventListener('click', () => {
           modalImg.src = card.image;
           modal.style.display = 'flex';
         });
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'card-name';
+        nameDiv.textContent = card.name || '';
+
+        cardDiv.appendChild(img);
+        cardDiv.appendChild(nameDiv);
 
         if (isAdmin) {
           const delBtn = document.createElement('button');
@@ -314,85 +355,4 @@
           delBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             await deleteCard(card.id);
-            renderCards(categorySelect.value);
-          });
-          cardDiv.appendChild(delBtn);
-        }
-
-        cardDiv.appendChild(img);
-        cardGrid.appendChild(cardDiv);
-      });
-    });
-  }
-
-  adminLoginBtn.addEventListener('click', () => {
-    const pwd = prompt('请输入管理员密码:');
-    if (pwd === ADMIN_PASSWORD) {
-      alert('登录成功！');
-      isAdmin = true;
-      adminPanel.style.display = 'block';
-      adminLoginBtn.style.display = 'none';
-      renderCards(categorySelect.value);
-    } else {
-      alert('密码错误');
-    }
-  });
-
-  logoutBtn.addEventListener('click', () => {
-    isAdmin = false;
-    adminPanel.style.display = 'none';
-    adminLoginBtn.style.display = 'inline-block';
-    renderCards(categorySelect.value);
-  });
-
-  uploadBtn.addEventListener('click', () => {
-    const files = fileInput.files;
-    const category = uploadCategory.value;
-
-    if (!files.length) {
-      alert('请选择至少一张图片上传');
-      return;
-    }
-
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const card = {
-          id: Date.now() + Math.random(),
-          image: e.target.result,
-          category
-        };
-        await addCard(card);
-        renderCards(categorySelect.value);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    fileInput.value = '';
-  });
-
-  deleteAllBtn.addEventListener('click', async () => {
-    if (confirm(`确定要删除分类 "${categorySelect.value}" 的所有卡片吗？此操作不可恢复！`)) {
-      await deleteAllCardsByCategory(categorySelect.value);
-      renderCards(categorySelect.value);
-    }
-  });
-
-  categorySelect.addEventListener('change', () => {
-    renderCards(categorySelect.value);
-  });
-
-  modal.addEventListener('click', () => {
-    modal.style.display = 'none';
-  });
-
-  // 初始化打开数据库并渲染
-  openDB().then(() => {
-    renderCards();
-  }).catch(err => {
-    alert(err);
-  });
-</script>
-
-</body>
-</html>
+            render
