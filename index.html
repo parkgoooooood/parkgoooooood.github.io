@@ -5,7 +5,43 @@
 <title>小卡展示（IndexedDB 存储版）</title>
 <style>
   body { font-family: sans-serif; margin: 20px; text-align: center; }
-  .grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+  #categorySelect, #uploadCategory {
+    font-size: 16px;
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  #deleteAllBtn {
+    font-size: 14px;
+    padding: 7px 15px;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #deleteAllBtn:hover {
+    background-color: #c9302c;
+  }
+  #fileInput {
+    cursor: pointer;
+  }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+  }
   .card {
     position: relative;
     width: 120px; height: 120px;
@@ -44,76 +80,55 @@
     border-radius: 8px;
     box-shadow: 0 0 10px #fff;
   }
-  #categorySelect {
-    font-size: 16px;
-    padding: 5px;
-    margin-bottom: 10px;
-  }
-  #uploadCategory {
-    margin-left: 10px;
-    font-size: 14px;
-  }
-  #deleteAllBtn {
-    margin-left: 20px;
-    font-size: 14px;
-    padding: 5px 10px;
-    background-color: #d9534f;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  #deleteAllBtn:hover {
-    background-color: #c9302c;
-  }
 </style>
 </head>
 <body>
   <h1>小卡展示（IndexedDB 存储版）</h1>
 
-  <label for="categorySelect">选择分类: </label>
-  <select id="categorySelect">
-    <option value="全部">全部</option>
-    <option value="9.9卡池">9.9卡池</option>
-    <option value="15.9卡池">15.9卡池</option>
-    <option value="星光卡">星光卡</option>
-    <option value="25.9吒卡池">25.9吒卡池</option>
-    <option value="29.9吒卡池">29.9吒卡池</option>
-    <option value="金冬天卡池">金冬天卡池</option>
-    <option value="柳智敏卡池">柳智敏卡池</option>
-    <option value="宁艺卓卡池">宁艺卓卡池</option>
-    <option value="吉赛尔卡池">吉赛尔卡池</option>
-    <option value="金智秀卡池">金智秀卡池</option>
-    <option value="lisa卡池">lisa卡池</option>
-    <option value="Jennie卡池">Jennie卡池</option>
-    <option value="rose卡池">rose卡池</option>
-    <option value="宝怪卡池">宝怪卡池</option>
-    <option value="芙卡池">芙卡池</option>
-  </select>
+  <div class="controls">
+    <label for="categorySelect">选择分类:</label>
+    <select id="categorySelect">
+      <option value="全部">全部</option>
+      <option value="9.9卡池">9.9卡池</option>
+      <option value="15.9卡池">15.9卡池</option>
+      <option value="星光卡">星光卡</option>
+      <option value="25.9吒卡池">25.9吒卡池</option>
+      <option value="29.9吒卡池">29.9吒卡池</option>
+      <option value="金冬天卡池">金冬天卡池</option>
+      <option value="柳智敏卡池">柳智敏卡池</option>
+      <option value="宁艺卓卡池">宁艺卓卡池</option>
+      <option value="吉赛尔卡池">吉赛尔卡池</option>
+      <option value="金智秀卡池">金智秀卡池</option>
+      <option value="lisa卡池">lisa卡池</option>
+      <option value="Jennie卡池">Jennie卡池</option>
+      <option value="rose卡池">rose卡池</option>
+      <option value="宝怪卡池">宝怪卡池</option>
+      <option value="芙卡池">芙卡池</option>
+    </select>
 
-  <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
+    <label for="uploadCategory">上传分类:</label>
+    <select id="uploadCategory">
+      <option value="9.9卡池">9.9卡池</option>
+      <option value="15.9卡池">15.9卡池</option>
+      <option value="星光卡">星光卡</option>
+      <option value="25.9吒卡池">25.9吒卡池</option>
+      <option value="29.9吒卡池">29.9吒卡池</option>
+      <option value="金冬天卡池">金冬天卡池</option>
+      <option value="柳智敏卡池">柳智敏卡池</option>
+      <option value="宁艺卓卡池">宁艺卓卡池</option>
+      <option value="吉赛尔卡池">吉赛尔卡池</option>
+      <option value="金智秀卡池">金智秀卡池</option>
+      <option value="lisa卡池">lisa卡池</option>
+      <option value="Jennie卡池">Jennie卡池</option>
+      <option value="rose卡池">rose卡池</option>
+      <option value="宝怪卡池">宝怪卡池</option>
+      <option value="芙卡池">芙卡池</option>
+    </select>
 
-  <br/>
+    <input type="file" id="fileInput" multiple accept="image/*" />
 
-  <input type="file" id="fileInput" multiple accept="image/*" />
-  <label for="uploadCategory">上传分类:</label>
-  <select id="uploadCategory">
-    <option value="9.9卡池">9.9卡池</option>
-    <option value="15.9卡池">15.9卡池</option>
-    <option value="星光卡">星光卡</option>
-    <option value="25.9吒卡池">25.9吒卡池</option>
-    <option value="29.9吒卡池">29.9吒卡池</option>
-    <option value="金冬天卡池">金冬天卡池</option>
-    <option value="柳智敏卡池">柳智敏卡池</option>
-    <option value="宁艺卓卡池">宁艺卓卡池</option>
-    <option value="吉赛尔卡池">吉赛尔卡池</option>
-    <option value="金智秀卡池">金智秀卡池</option>
-    <option value="lisa卡池">lisa卡池</option>
-    <option value="Jennie卡池">Jennie卡池</option>
-    <option value="rose卡池">rose卡池</option>
-    <option value="宝怪卡池">宝怪卡池</option>
-    <option value="芙卡池">芙卡池</option>
-  </select>
+    <button id="deleteAllBtn" title="删除当前分类所有卡片">一键删除当前分类</button>
+  </div>
 
   <div class="grid" id="cardGrid"></div>
 
