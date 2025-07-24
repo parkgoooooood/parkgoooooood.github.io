@@ -297,4 +297,102 @@
 
   // 渲染卡片
   function renderCards(category = '全部') {
-    getCards(category).then
+    getCards(category).then(cards => {
+      cardGrid.innerHTML = '';
+      cards.forEach(card => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+
+        const img = document.createElement('img');
+        img.src = card.image;
+        img.alt = '小卡图片';
+
+        img.addEventListener('click', () => {
+          modalImg.src = card.image;
+          modal.style.display = 'flex';
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '×';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await deleteCard(card.id);
+          renderCards(categorySelect.value);
+        });
+
+        cardDiv.appendChild(img);
+        cardDiv.appendChild(delBtn);
+        cardGrid.appendChild(cardDiv);
+      });
+    });
+  }
+
+  // 管理员登录流程
+  adminLoginBtn.addEventListener('click', () => {
+    const pwd = prompt('请输入管理员密码:');
+    if (pwd === ADMIN_PASSWORD) {
+      adminPanel.style.display = 'block';
+      adminLoginBtn.style.display = 'none';
+    } else {
+      alert('密码错误！');
+    }
+  });
+
+  // 退出登录
+  logoutBtn.addEventListener('click', () => {
+    adminPanel.style.display = 'none';
+    adminLoginBtn.style.display = 'block';
+  });
+
+  // 上传文件
+  uploadBtn.addEventListener('click', () => {
+    const files = fileInput.files;
+    const category = uploadCategory.value;
+    if (!files.length) {
+      alert('请选择要上传的图片文件');
+      return;
+    }
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const card = {
+          id: Date.now() + Math.random(),
+          image: e.target.result,
+          category
+        };
+        await addCard(card);
+        renderCards(categorySelect.value);
+      };
+      reader.readAsDataURL(file);
+    });
+    fileInput.value = '';
+  });
+
+  // 一键删除当前分类
+  deleteAllBtn.addEventListener('click', async () => {
+    const category = categorySelect.value;
+    if (confirm(`确认删除分类 "${category}" 的所有卡片吗？此操作不可恢复！`)) {
+      await deleteAllCardsByCategory(category);
+      renderCards(category);
+    }
+  });
+
+  // 分类筛选
+  categorySelect.addEventListener('change', () => {
+    renderCards(categorySelect.value);
+  });
+
+  // 点击大图弹窗关闭
+  modal.addEventListener('click', () => {
+    modal.style.display = 'none';
+    modalImg.src = '';
+  });
+
+  // 初始化
+  openDB().then(() => {
+    renderCards();
+  }).catch(err => alert(err));
+</script>
+</body>
+</html>
