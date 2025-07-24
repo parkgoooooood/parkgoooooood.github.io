@@ -198,6 +198,7 @@
 
   // 渲染卡片
   function renderCards(category = '全部') {
+    console.log('渲染分类:', category);
     getCards(category).then(cards => {
       cardGrid.innerHTML = '';
       cards.forEach(card => {
@@ -261,7 +262,7 @@
 
   // 初始化
   openDB().then(() => {
-    renderCards();
+    renderCards(categorySelect.value);  // 这里用当前选择的分类渲染
   }).catch(err => {
     alert(err);
   });
