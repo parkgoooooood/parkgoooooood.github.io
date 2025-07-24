@@ -96,12 +96,33 @@
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    user-select: none;
   }
   #modal img {
     max-width: 90vw;
     max-height: 90vh;
     border-radius: 8px;
     box-shadow: 0 0 10px #fff;
+    pointer-events: none;
+  }
+  #modal .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: white;
+    font-size: 50px;
+    cursor: pointer;
+    user-select: none;
+    padding: 0 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 3px;
+    user-select: none;
+  }
+  #modal .arrow.left {
+    left: 20px;
+  }
+  #modal .arrow.right {
+    right: 20px;
   }
 </style>
 </head>
@@ -163,7 +184,9 @@
 <div class="grid" id="cardGrid"></div>
 
 <div id="modal">
+  <div class="arrow left" id="modalPrev">&#8249;</div>
   <img id="modalImg" src="" alt="大图预览" />
+  <div class="arrow right" id="modalNext">&#8250;</div>
 </div>
 
 <script>
@@ -173,6 +196,8 @@
 
   let db;
   let isAdmin = false;
+  let currentCategoryCards = [];
+  let currentIndex = 0;
 
   // 打开或创建数据库
   function openDB() {
@@ -284,13 +309,14 @@
   async function renderCards(category = '全部') {
     try {
       const cards = await getCards(category);
+      currentCategoryCards = cards; // 保存当前分类所有卡片，方便大图浏览
       cardGrid.innerHTML = '';
       if (cards.length === 0) {
         cardGrid.textContent = '暂无卡片';
         return;
       }
 
-      cards.forEach(card => {
+      cards.forEach((card, index) => {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'card';
 
@@ -299,8 +325,8 @@
         img.alt = '小卡图片';
 
         img.addEventListener('click', () => {
-          modalImg.src = card.image;
-          modal.style.display = 'flex';
+          currentIndex = index;
+          openModal();
         });
 
         if (isAdmin) {
@@ -326,7 +352,35 @@
     }
   }
 
-  // 绑定事件与初始化
+  // 文件转base64封装为Promise，方便await
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = () => reject('读取文件失败');
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 打开大图弹窗
+  function openModal() {
+    if (!currentCategoryCards.length) return;
+    modal.style.display = 'flex';
+    updateModalImage();
+  }
+
+  // 关闭大图弹窗
+  function closeModal() {
+    modal.style.display = 'none';
+    modalImg.src = '';
+  }
+
+  // 更新大图为当前索引图片
+  function updateModalImage() {
+    modalImg.src = currentCategoryCards[currentIndex].image;
+  }
+
+  // 绑定事件
   function bindEvents() {
     const adminLoginBtn = document.getElementById('adminLoginBtn');
     const adminPanel = document.getElementById('adminPanel');
@@ -336,8 +390,8 @@
     const logoutBtn = document.getElementById('logoutBtn');
     const deleteAllBtn = document.getElementById('deleteAllBtn');
     const categorySelect = document.getElementById('categorySelect');
-    const modal = document.getElementById('modal');
-    const modalImg = document.getElementById('modalImg');
+    const modalPrev = document.getElementById('modalPrev');
+    const modalNext = document.getElementById('modalNext');
 
     adminLoginBtn.addEventListener('click', () => {
       const pwd = prompt('请输入管理员密码:');
@@ -353,12 +407,10 @@
     });
 
     logoutBtn.addEventListener('click', () => {
-      if (confirm('确定退出管理员登录吗？')) {
-        isAdmin = false;
-        adminPanel.style.display = 'none';
-        adminLoginBtn.style.display = 'inline-block';
-        renderCards(categorySelect.value);
-      }
+      isAdmin = false;
+      adminPanel.style.display = 'none';
+      adminLoginBtn.style.display = 'inline-block';
+      renderCards(categorySelect.value);
     });
 
     uploadBtn.addEventListener('click', async () => {
@@ -370,11 +422,8 @@
         return;
       }
 
-      // 禁用按钮避免重复点击
-      uploadBtn.disabled = true;
-      try {
-        // 顺序读取文件并添加，避免重复渲染多次
-        for (const file of files) {
+      for (const file of files) {
+        try {
           const base64 = await fileToBase64(file);
           const card = {
             id: Date.now() + Math.random(),
@@ -382,27 +431,18 @@
             category
           };
           await addCard(card);
+        } catch (err) {
+          alert(err);
         }
-        alert('上传成功！');
-        await renderCards(categorySelect.value);
-      } catch (err) {
-        alert('上传失败：' + err);
-      } finally {
-        uploadBtn.disabled = false;
-        fileInput.value = '';
       }
+      fileInput.value = '';
+      await renderCards(categorySelect.value);
     });
 
     deleteAllBtn.addEventListener('click', async () => {
-      const category = categorySelect.value;
-      if (confirm(`确定要删除分类 "${category}" 的所有卡片吗？此操作不可恢复！`)) {
-        try {
-          await deleteAllCardsByCategory(category);
-          alert('删除成功');
-          await renderCards(category);
-        } catch (err) {
-          alert('删除失败：' + err);
-        }
+      if (confirm(`确定要删除分类 "${categorySelect.value}" 的所有卡片吗？此操作不可恢复！`)) {
+        await deleteAllCardsByCategory(categorySelect.value);
+        await renderCards(categorySelect.value);
       }
     });
 
@@ -410,34 +450,51 @@
       renderCards(categorySelect.value);
     });
 
-    modal.addEventListener('click', () => {
-      modal.style.display = 'none';
-      modalImg.src = '';
+    // 大图弹窗点击左右箭头切换图片
+    modalPrev.addEventListener('click', () => {
+      if (!currentCategoryCards.length) return;
+      currentIndex = (currentIndex - 1 + currentCategoryCards.length) % currentCategoryCards.length;
+      updateModalImage();
+    });
+
+    modalNext.addEventListener('click', () => {
+      if (!currentCategoryCards.length) return;
+      currentIndex = (currentIndex + 1) % currentCategoryCards.length;
+      updateModalImage();
+    });
+
+    // 点击遮罩非图片区域关闭弹窗
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // 键盘事件支持左右切换和ESC关闭
+    window.addEventListener('keydown', e => {
+      if (modal.style.display === 'flex') {
+        if (e.key === 'ArrowLeft') {
+          modalPrev.click();
+        } else if (e.key === 'ArrowRight') {
+          modalNext.click();
+        } else if (e.key === 'Escape') {
+          closeModal();
+        }
+      }
     });
   }
 
-  // 文件转base64封装为Promise，方便await
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.onerror = () => reject('读取文件失败');
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // 初始化入口
-  async function init() {
-    try {
-      await openDB();
+  // 页面初始化
+  openDB()
+    .then(() => {
       bindEvents();
-      await renderCards(); // 默认加载全部
-    } catch (err) {
+      renderCards();
+    })
+    .catch(err => {
       alert(err);
-    }
-  }
-
-  window.onload = init;
+    });
 </script>
 
 </body>
